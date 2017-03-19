@@ -1,6 +1,5 @@
 """
-
-This code tokenizes the input data into sentences, then feeds each
+This code tokenizes the input data into sentences using nltk, then feeds each
 sentence to the Berkeley Parser.
 OUTPUT:
 sentence
