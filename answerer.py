@@ -5,6 +5,28 @@ import collections
 Sentence = collections.namedtuple('Sentence', 'text matrix')
 EMBEDDING_SIZE = 300
 
+class Answerer(object):
+    def __init__(self, doc):
+        self.nlp = spacy.load('en')
+        self.doc = self.nlp(doc)
+        self.matrix = get_doc_matrix(self.doc)
+
+    def find_answer_sentence(self, q):
+        smallest = self.matrix[0]
+        s_dist = compute_dist(self.matrix[0].matrix, q)
+        for sent in self.matrix:
+            dist = compute_dist(sent.matrix, q)
+            if dist < s_dist:
+                smallest = sent
+                s_dist = dist
+        return smallest
+
+    def get_answer(self, question):
+        q = self.nlp(question)
+        m = get_sentence_matrix(q)
+        answer = self.find_answer_sentence(m)
+        return answer.text
+
 def get_doc_matrix(doc):
     sentences = []
     for sent in doc.sents:
@@ -30,25 +52,3 @@ def compute_dist(a, b):
         for j in range(b.shape[1]):
             total += np.linalg.norm(a[:,i] - b[:,j])
     return float(total) / (a.shape[1] * b.shape[1])
-
-class Answerer(object):
-    def __init__(self, doc):
-        self.nlp = spacy.load('en')
-        self.doc = self.nlp(doc)
-        self.matrix = get_doc_matrix(self.doc)
-
-    def find_answer_sentence(self, q):
-        smallest = self.matrix[0]
-        s_dist = compute_dist(self.matrix[0].matrix, q)
-        for sent in self.matrix:
-            dist = compute_dist(sent.matrix, q)
-            if dist < s_dist:
-                smallest = sent
-                s_dist = dist
-        return smallest
-
-    def get_answer(self, question):
-        q = self.nlp(question)
-        m = get_sentence_matrix(q)
-        answer = self.find_answer_sentence(m)
-        return answer.text
