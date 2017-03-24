@@ -48,7 +48,7 @@ def preprocess_docs(root_dir, set_list):
     for s in set_list:
         texts, files, topics = read_in_set(root_dir, s)
         num_files = len(files)
-        
+                
         set_dict[s] = []
         
         for i in range(num_files):
