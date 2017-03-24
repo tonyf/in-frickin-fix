@@ -40,13 +40,12 @@ def resolve_coreferences(doc, pronoun_list, label, is_possessive):
     return "".join(new_text)
 
 # Pre-process all sets
-def preprocess_docs(root_dir):
+def preprocess_docs(root_dir, set_list):
     # Initialize the spacy natural language processor
     nlp = spacy.load('en')
     
-    sets = ["set1", "set2", "set3", "set4"]
     set_dict = {}
-    for s in sets:
+    for s in set_list:
         texts, files, topics = read_in_set(root_dir, s)
         num_files = len(files)
         
@@ -78,5 +77,6 @@ def preprocess_docs(root_dir):
 # Testbed for pre-processing
 if __name__ == "__main__":
     root_dir = sys.argv[1]
-    set_dict = preprocess_docs(root_dir)
+    sets = ["set1", "set2", "set3", "set4"]
+    set_dict = preprocess_docs(root_dir, sets)
     print set_dict["set1"][0]
