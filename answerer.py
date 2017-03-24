@@ -1,33 +1,54 @@
 import numpy as np
 import spacy
+import collections
+
+Sentence = collections.namedtuple('Sentence', 'text matrix')
+EMBEDDING_SIZE = 300
+
+def get_doc_matrix(doc):
+    sentences = []
+    for sent in doc.sents:
+        s = Sentence(text=sent.text, matrix=get_sentence_matrix(sent))
+        sentences.append(s)
+    return sentences
+
+def get_sentence_matrix(s):
+    n = len(s)
+    matrix = np.zeros((EMBEDDING_SIZE, n))
+    for i in range(n):
+         matrix[:,i] = s[i].vector[:]
+    # K-Max Pooling
+    # if n > k:
+    #     summed = np.sum(matrix, axis=0)
+    #     idx = summed.argsort()
+    #     matrix = np.take(matrix, idx, axis=1)[:,:k]
+    return matrix
+
+def compute_dist(a, b):
+    total = 0
+    for i in range(a.shape[1]):
+        for j in range(b.shape[1]):
+            total += np.linalg.norm(a[:,i] - b[:,j])
+    return float(total) / (a.shape[1] * b.shape[1])
 
 class Answerer(object):
-
-    def __init__(self, doc, k):
-        self.k = k
+    def __init__(self, doc):
         self.nlp = spacy.load('en')
-        self.doc = nlp(doc)
-        self.doc_matrix = get_doc_matrix(self.doc, self.k)
+        self.doc = self.nlp(doc)
+        self.matrix = get_doc_matrix(self.doc)
 
-    def get_doc_matrix(doc, k):
-        sentences = []
-        for sent in doc.sents:
-            sentences.append(get_sentence_matrix(sent, k))
-        return sentences
-
-    def get_sentence_matrix(s, k):
-        n = len(s) > k ? len(s) : k
-        matrix = np.zeros((s[0].size, n))
-        for i in len(q):
-            matrix[:,i] = s[i].vector
-        if n > k:
-            # k-max pool
-        return matrix
-
-    def find_answer_sentence(self, q_matrix):
-        return
+    def find_answer_sentence(self, q):
+        smallest = self.matrix[0]
+        s_dist = compute_dist(self.matrix[0].matrix, q)
+        for sent in self.matrix:
+            dist = compute_dist(sent.matrix, q)
+            if dist < s_dist:
+                smallest = sent
+                s_dist = dist
+        return smallest
 
     def get_answer(self, question):
-        q = nlp(question)
-        q_matrix = get_sentence_matrix()
-        return
+        q = self.nlp(question)
+        m = get_sentence_matrix(q)
+        answer = self.find_answer_sentence(m)
+        return answer.text
