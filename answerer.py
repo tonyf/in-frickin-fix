@@ -51,5 +51,13 @@ def compute_dist(a, b):
     total = 0
     for i in range(a.shape[1]):
         for j in range(b.shape[1]):
-            total += sp.distance.cosine(a[:,i], b[:,j])
+            a_sum = a[:, i].sum() == 0
+            b_sum = b[:, j].sum() == 0
+
+            if a[:, i].sum() == 0:
+                total += np.linalg.norm(b[:,j])
+            elif b[:, j].sum() == 0:
+                total += np.linalg.norm(b[:,j])
+            else:
+                total += sp.distance.cosine(a[:,i].flatten(), b[:,j].flatten())
     return float(total) / (a.shape[1] * b.shape[1])
