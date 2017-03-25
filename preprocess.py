@@ -1,41 +1,86 @@
-"""
-This code tokenizes the input data into sentences using nltk, then feeds each
-sentence to the Berkeley Parser.
-OUTPUT:
-sentence
-parsed sentence
-
-"""
-
-import os
-import sys
-from BerkeleyParser import *
-from nltk.corpus import treebank
-import nltk
 import codecs
-from nltk.tokenize import sent_tokenize, word_tokenize
+import re
+import os
+import spacy
+import sys
+from operator import itemgetter
 
-root_dir = sys.argv[1]
-files = []
-set1 = "set1"
-set2 = "set2"
-set3 = "set3"
-set4 = "set4"
+# Open the directory given by the arguments and read all the .txt files in it
+def read_in_set(root_dir, set_name):
+    texts = []
+    files = []
+    topics = []
+    fpath = os.path.join(root_dir, set_name)
+    for i in os.listdir(fpath):
+        if i.endswith('.txt'):
+            files.append(os.path.join(fpath, i))
 
-#Open the subfolder set1 and read all the .txt files in it
-path1 = os.path.join(root_dir,set1)
-for i in os.listdir(path1):
-    if i.endswith('.txt'):
-		files.append(codecs.open(os.path.join(path1,i),'r'))
+    for filename in files:
+        with codecs.open(filename, 'r') as f:
+            topic = f.readline()
+            topics.append(topic)
+            txt = f.read()
+            txt = unicode(txt, encoding = 'ascii', errors = 'ignore')
+            texts.append(txt)
 
-i = 0
-for f in files:
-	text = f.read()
-	text = text.decode('utf-8')
-    sents = sent_tokenize(text)
-	break
+    return texts, files, topics
 
+# Resolve pronoun co-references within a label (NER class)
+def resolve_coreferences(doc, pronoun_list, label, is_possessive):
+    new_text = []
+    p_last = (0, 0)
+    for p in pronoun_list:
+        candidates = [(e.text, e.start) for e in doc.ents 
+                      if e.label_ == label and e.start_char < p[0]]
+        if len(candidates) > 0:
+            replacement = max(candidates, key = itemgetter(1))[0]
+            replacement = replacement + "'s" if is_possessive else replacement
+        else:
+            replacement = doc.text[p[0]:p[1]]
+        new_text.append(doc.text[p_last[1]:p[0]] + " " + replacement + " ")
+        p_last = p
+    new_text.append(doc.text[p_last[1]:])
+    return "".join(new_text)
 
-for line in sents:
-	print line
-	b_parse(line)
+# Pre-process all sets
+def preprocess_docs(root_dir, set_list):
+    # Initialize the spacy natural language processor
+    nlp = spacy.load('en')
+    
+    set_dict = {}
+    for s in set_list:
+        texts, files, topics = read_in_set(root_dir, s)
+        num_files = len(files)
+                
+        set_dict[s] = []
+        
+        for i in range(num_files):
+            filename = files[i]
+            txt = texts[i]
+            # Perform NLP on each file's contents     
+            #TODO: possibly throw away or handle separately section headers (lines without any periods)    
+            doc = nlp(txt)
+            #TODO: insert topic here
+                
+            # Co-reference resolution
+            per_re = r'( He )|( he )|( Him )|( him )|( She )|( she )'
+            per_list = [(m.start(), m.end()) for m in re.finditer(per_re, txt)]
+            txt = resolve_coreferences(doc, per_list, "PERSON", False)
+                
+            pos_re = r'( His )|( his )|( Hers )|( hers )'
+            pos_list = [(m.start(), m.end()) for m in re.finditer(pos_re, txt)]
+            txt = resolve_coreferences(doc, pos_list, "PERSON", True)
+            
+            #TODO: there may be a better way to modify the doc than to remake it
+            doc = nlp(txt)
+            set_dict[s].append(doc)
+        
+    return set_dict
+
+# Testbed for pre-processing
+if __name__ == "__main__":
+    root_dir = sys.argv[1]
+    #sets = ["set1", "set2", "set3", "set4"]
+    sets = ["test_set"]
+    set_dict = preprocess_docs(root_dir, sets)
+    print set_dict["set1"][0]
