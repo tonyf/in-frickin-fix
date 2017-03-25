@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.spatial as sp
 import spacy
 import collections
 
@@ -50,5 +51,5 @@ def compute_dist(a, b):
     total = 0
     for i in range(a.shape[1]):
         for j in range(b.shape[1]):
-            total += np.linalg.norm(a[:,i] - b[:,j])
+            total += sp.distance.cosine(a[:,i], b[:,j])
     return float(total) / (a.shape[1] * b.shape[1])
