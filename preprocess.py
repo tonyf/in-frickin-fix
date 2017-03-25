@@ -31,9 +31,12 @@ def resolve_coreferences(doc, pronoun_list, label, is_possessive):
     p_last = (0, 0)
     for p in pronoun_list:
         candidates = [(e.text, e.start) for e in doc.ents 
-                      if e.label_ == label and e.start < p[0]]
-        replacement = max(candidates, key = itemgetter(1))[0]
-        replacement = replacement + "'s" if is_possessive else replacement
+                      if e.label_ == label and e.start_char < p[0]]
+        if len(candidates) > 0:
+            replacement = max(candidates, key = itemgetter(1))[0]
+            replacement = replacement + "'s" if is_possessive else replacement
+        else:
+            replacement = doc.text[p[0]:p[1]]
         new_text.append(doc.text[p_last[1]:p[0]] + " " + replacement + " ")
         p_last = p
     new_text.append(doc.text[p_last[1]:])
@@ -60,13 +63,13 @@ def preprocess_docs(root_dir, set_list):
             #TODO: insert topic here
                 
             # Co-reference resolution
-            per_re = r'( He )|( he )|( Him )|( him )|( She )|( she )|( Her )|( her )'
+            per_re = r'( He )|( he )|( Him )|( him )|( She )|( she )'
             per_list = [(m.start(), m.end()) for m in re.finditer(per_re, txt)]
             txt = resolve_coreferences(doc, per_list, "PERSON", False)
                 
-            per_pos_re = r'( His )|( his )|( Her )|( her )|( Hers )|( hers )'
-            per_pos_list = [(m.start(), m.end()) for m in re.finditer(per_pos_re, txt)]
-            txt = resolve_coreferences(doc, per_pos_list, "PERSON", True)
+            pos_re = r'( His )|( his )|( Hers )|( hers )'
+            pos_list = [(m.start(), m.end()) for m in re.finditer(pos_re, txt)]
+            txt = resolve_coreferences(doc, pos_list, "PERSON", True)
             
             #TODO: there may be a better way to modify the doc than to remake it
             doc = nlp(txt)
@@ -77,6 +80,7 @@ def preprocess_docs(root_dir, set_list):
 # Testbed for pre-processing
 if __name__ == "__main__":
     root_dir = sys.argv[1]
-    sets = ["set1", "set2", "set3", "set4"]
+    #sets = ["set1", "set2", "set3", "set4"]
+    sets = ["test_set"]
     set_dict = preprocess_docs(root_dir, sets)
     print set_dict["set1"][0]
