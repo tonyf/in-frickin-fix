@@ -43,10 +43,7 @@ def resolve_coreferences(doc, pronoun_list, label, is_possessive):
     return "".join(new_text)
 
 # Pre-process all sets
-def preprocess_docs(root_dir, set_list):
-    # Initialize the spacy natural language processor
-    nlp = spacy.load('en')
-    
+def preprocess_docs(root_dir, set_list, nlp):
     set_dict = {}
     for s in set_list:
         texts, files, topics = read_in_set(root_dir, s)
@@ -60,7 +57,7 @@ def preprocess_docs(root_dir, set_list):
             # Perform NLP on each file's contents     
             #TODO: possibly throw away or handle separately section headers (lines without any periods)    
             doc = nlp(txt)
-            #TODO: insert topic here
+            #TODO: insert topic here?
                 
             # Co-reference resolution
             per_re = r'( He )|( he )|( Him )|( him )|( She )|( she )'
@@ -70,6 +67,10 @@ def preprocess_docs(root_dir, set_list):
             pos_re = r'( His )|( his )|( Hers )|( hers )'
             pos_list = [(m.start(), m.end()) for m in re.finditer(pos_re, txt)]
             txt = resolve_coreferences(doc, pos_list, "PERSON", True)
+            
+            loc_re = r'( There )|( there )'
+            loc_list = [(m.start(), m.end()) for m in re.finditer(pos_re, txt)]
+            #TODO: location-based co-ref resolution
             
             #TODO: there may be a better way to modify the doc than to remake it
             doc = nlp(txt)
@@ -82,5 +83,6 @@ if __name__ == "__main__":
     root_dir = sys.argv[1]
     #sets = ["set1", "set2", "set3", "set4"]
     sets = ["test_set"]
-    set_dict = preprocess_docs(root_dir, sets)
+    nlp = spacy.load("en")
+    set_dict = preprocess_docs(root_dir, sets, nlp)
     print set_dict["set1"][0]

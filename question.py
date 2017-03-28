@@ -1,4 +1,5 @@
 import os
+import spacy
 import sys
 import re
 from preprocess import preprocess_docs
@@ -10,8 +11,8 @@ questions = []
 set_list = ["test_set","set1","set2","set3","set4"]
 
 #Call the spacy preprocess module
-def preprocess(setlist):
-	set_dict = preprocess_docs(root_dir,setlist)
+def preprocess(setlist, nlp):
+	set_dict = preprocess_docs(root_dir,setlist,nlp)
 	return set_dict
 
 #Removes all excess whitespace in each question in the global list questions
@@ -35,7 +36,7 @@ def tree_questions(doc):
 		if mv.pos_!="VERB":
 			continue
 
-		aux = neg = subj =  number = None	
+		aux = neg = subj = number = None	
 		position = int(mv.i)
 		#NOTE: For now, assume a sentence has max of one aux, one neg
 		for child in mv.children:
@@ -117,7 +118,8 @@ def tree_questions(doc):
 
 def main():
 	setlist = ["test_set"]
-	set_dict = preprocess(setlist)
+	nlp = spacy.load("en")
+	set_dict = preprocess(setlist, nlp)
 	print "Questions for doc0 (the first doc) in test_set: "
 	print "------------------------------------------------"
 	doc1 = set_dict[set_list[0]]

@@ -1,15 +1,14 @@
 import numpy as np
 import scipy.spatial as sp
-import spacy
 import collections
 
 Sentence = collections.namedtuple('Sentence', 'text matrix')
 EMBEDDING_SIZE = 300
 
 class Answerer(object):
-    def __init__(self, doc):
-        self.nlp = spacy.load('en')
-        self.doc = self.nlp(doc)
+    def __init__(self, doc, nlp):
+        self.nlp = nlp
+        self.doc = doc
         self.matrix = get_doc_matrix(self.doc)
 
     def find_answer_sentence(self, q):
@@ -37,9 +36,8 @@ def get_doc_matrix(doc):
 
 def get_sentence_matrix(s):
     n = len(s)
-    matrix = np.zeros((EMBEDDING_SIZE, n))
-    for i in range(n):
-         matrix[:,i] = s[i].vector[:]
+    matrix = np.zeros((EMBEDDING_SIZE, 1))
+    matrix[:,0] = s.vector
     # K-Max Pooling
     # if n > k:
     #     summed = np.sum(matrix, axis=0)
