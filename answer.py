@@ -28,7 +28,7 @@ def main(use_terminal):
             ]
 
     for question in questions:
-            answer = A.get_answer(question, 2)
+            answer = A.get_answer(question, 3)
             print "Q: {0} | A: {1}".format(question, answer)
 
 

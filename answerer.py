@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.spatial as sp
 import collections
+import math
 
 Sentence = collections.namedtuple('Sentence', 'text matrix')
 EMBEDDING_SIZE = 300
@@ -23,9 +24,9 @@ class Answerer(object):
                 smallest = s
                 s_dist = dist
                 s_index = i
-        step = (window / 2)
+        step = int(math.floor(float(window) / 2))
         start = s_index-step if s_index-step > 0 else 0
-        stop = s_index+step if s_index+step < len(self.matrix) else len(self.matrix)
+        stop = s_index+step+1 if s_index+step < len(self.matrix) else len(self.matrix)
         return self.matrix[start:stop]
 
     def get_answer(self, question, window):
