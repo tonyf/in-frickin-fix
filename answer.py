@@ -26,12 +26,12 @@ def main(use_terminal):
                 u"What does Clint Dempsey think about Communism?",
                 u"Is Clint Dempsey in a good mood today?"
             ]
-    
+
     for question in questions:
-            answer = A.get_answer(question)
-            print "Q: {0} | A: {1}".format(question, answer.strip())
-            
+            answer = A.get_answer(question, 2)
+            print "Q: {0} | A: {1}".format(question, answer)
+
 
 if __name__ == '__main__':
-    use_terminal = True
+    use_terminal = False
     main(use_terminal)

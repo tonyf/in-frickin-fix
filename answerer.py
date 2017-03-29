@@ -11,21 +11,29 @@ class Answerer(object):
         self.doc = doc
         self.matrix = get_doc_matrix(self.doc)
 
-    def find_answer_sentence(self, q):
+    def find_answer_sentence(self, q, window):
         smallest = self.matrix[0]
         s_dist = compute_dist(self.matrix[0].matrix, q)
-        for sent in self.matrix:
-            dist = compute_dist(sent.matrix, q)
-            if dist < s_dist:
-                smallest = sent
-                s_dist = dist
-        return smallest
+        s_index = 0
 
-    def get_answer(self, question):
+        for i in range(len(self.matrix)):
+            s = self.matrix[i]
+            dist = compute_dist(s.matrix, q)
+            if dist < s_dist:
+                smallest = s
+                s_dist = dist
+                s_index = i
+        step = (window / 2)
+        start = s_index-step if s_index-step > 0 else 0
+        stop = s_index+step if s_index+step < len(self.matrix) else len(self.matrix)
+        return self.matrix[start:stop]
+
+    def get_answer(self, question, window):
         q = self.nlp(question)
         m = get_sentence_matrix(q)
-        answer = self.find_answer_sentence(m)
-        return answer.text
+        answer = self.find_answer_sentence(m, window)
+        text = [x.text.strip() for x in answer]
+        return ' '.join(text)
 
 def get_doc_matrix(doc):
     sentences = []
