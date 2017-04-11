@@ -2,6 +2,7 @@ import numpy as np
 import scipy.spatial as sp
 import collections
 import math
+from q_classifier import QClassifier
 
 from document_classifier.classifier import DocClassifier
 
@@ -11,13 +12,31 @@ EMBEDDING_SIZE = 300
 
 
 class Answerer(object):
-    def __init__(self, docs, nlp):
+    # def __init__(self, docs, nlp):
+    #     self.nlp = nlp
+    #     self.docs = parse_docs(docs)
+
+    def __init__(self, set_dict, nlp):
         self.nlp = nlp
         self.docs = parse_docs(docs)
 
     def get_category_docs(self, category):
-        return [d for d in docs if d.category == category]
+        return [d for d in self.docs if d.category == category]
 
+    def find_probable_doc(self, q):
+        TOPIC_SIZE = 200
+        max_sim = float("-inf")
+        best_doc = None
+        for key in self.set_dict:
+            for doc in self.set_dict[key]:
+                # If the question mentions a named entity
+                topic = doc
+                sim = topic.similarity(q)
+                if sim > max_sim:
+                    max_sim = sim
+                    best_doc = doc
+        print best_doc[0:25]
+        return best_doc
 
     def find_answer_doc(self, question):
         q = self.nlp(question)
@@ -31,36 +50,27 @@ class Answerer(object):
         # Cosine similarity?
         return None
 
-
-
-        # TODO: Find NERs. Match NER to class. Search wihthin class
-        return None
-
-    def find_answer_sentence(self, doc_matrix, question_matrix, window):
-        smallest = doc_matrix[0]
-        s_dist = compute_dist(doc_matrix[0].matrix, q)
+    def find_answer_sentence(self, q, doc, window):
+        matrix = get_doc_matrix(doc)
+        smallest = matrix[0]
+        s_dist = compute_dist(matrix[0].matrix, q)
         s_index = 0
 
-        for i in range(len(doc_matrix)):
-            s = doc_matrix[i]
-            dist = compute_dist(s.matrix, q)
-            if dist < s_dist:
-                smallest = s
-                s_dist = dist
-                s_index = i
-        step = int(math.floor(float(window) / 2))
-        start = s_index-step if s_index-step > 0 else 0
+        for i in range(len(matrix)):
+            s = matrix[i]
         stop = s_index+step+1 if s_index+step < len(doc_matrix) else len(doc_matrix)
         return doc_matrix[start:stop]
 
     def get_answer(self, question, window):
         q = self.nlp(question)
-        d = self.get_answer_doc(q)
+        qclassifier = QClassifier(q)
+        qtype = qclassifier.type
+        doc = self.find_probable_doc(q)
+        # d = self.get_answer_doc(q)
         m = get_sentence_matrix(q)
-        answer = self.find_answer_sentence(d.matrix, m, window)
+        answer = self.find_answer_sentence(m, doc, window)
         text = [x.text.strip() for x in answer]
         return ' '.join(text)
-
 
 def parse_docs(docs):
     docs = []
@@ -85,18 +95,3 @@ def get_sentence_matrix(s):
     matrix = np.zeros((EMBEDDING_SIZE, 1))
     matrix[:,0] = s.vector
     return matrix
-
-def compute_dist(a, b):
-    total = 0
-    for i in range(a.shape[1]):
-        for j in range(b.shape[1]):
-            a_sum = a[:, i].sum() == 0
-            b_sum = b[:, j].sum() == 0
-
-            if a[:, i].sum() == 0:
-                total += np.linalg.norm(b[:,j])
-            elif b[:, j].sum() == 0:
-                total += np.linalg.norm(b[:,j])
-            else:
-                total += sp.distance.cosine(a[:,i].flatten(), b[:,j].flatten())
-    return float(total) / (a.shape[1] * b.shape[1])

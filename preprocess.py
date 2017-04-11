@@ -19,9 +19,14 @@ def read_in_set(root_dir, set_name):
         with codecs.open(filename, 'r') as f:
             topic = f.readline()
             topics.append(topic)
-            txt = f.read()
-            txt = unicode(txt, encoding = 'ascii', errors = 'ignore')
-            texts.append(txt)
+            temp = []
+            txt = f.readline()
+            while txt != "":
+                stripped = txt.strip()
+                if len(stripped) > 0 and stripped[-1] in ['.', ';', '?', '!']:
+                    temp.append(unicode(stripped, encoding = 'ascii', errors = 'ignore'))
+                txt = f.readline()
+            texts.append(" ".join(temp))
 
     return texts, files, topics
 
