@@ -1,4 +1,5 @@
 from collections import defaultdict, namedtuple
+from document_classifier.classifier import *
 
 Sentence = collections.namedtuple('Sentence', 'text matrix')
 

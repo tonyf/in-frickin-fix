@@ -4,7 +4,6 @@ import scipy.spatial as sp
 
 from doc_utils import *
 from q_classifier import *
-from document_classifier.classifier import *
 
 EMBEDDING_SIZE = 300
 TOPIC_SIZE = 200
