@@ -6,15 +6,33 @@ import math
 from document_classifier.classifier import DocClassifier
 
 Sentence = collections.namedtuple('Sentence', 'text matrix')
-Doc = collections.namedtuple('Doc', 'text matrix category')
+Doc = collections.namedtuple('Doc', 'title text matrix category')
 EMBEDDING_SIZE = 300
+
 
 class Answerer(object):
     def __init__(self, docs, nlp):
         self.nlp = nlp
         self.docs = parse_docs(docs)
 
-    def find_answer_doc(self, q):
+    def get_category_docs(self, category):
+        return [d for d in docs if d.category == category]
+
+
+    def find_answer_doc(self, question):
+        q = self.nlp(question)
+        entity = None
+        if q.ents:
+            entity = q.ents[0]
+        else:
+            # No named entities, search with biggest vector
+        category = ent2category(entity)
+        category_docs = self.get_category_docs(category)
+        # Cosine similarity?
+        return None
+
+
+
         # TODO: Find NERs. Match NER to class. Search wihthin class
         return None
 
@@ -43,13 +61,17 @@ class Answerer(object):
         text = [x.text.strip() for x in answer]
         return ' '.join(text)
 
+
 def parse_docs(docs):
     docs = []
     classifier = DocClassifier()
     for doc in docs
-        d = Doc(text=doc, matrix=get_doc_matrix(doc), category=classifier.predict(doc))
+        d = Doc(title=get_doc_title(doc), text=doc, matrix=get_doc_matrix(doc), category=classifier.predict(doc))
         docs.append(d)
     return docs
+
+def get_doc_title(doc):
+    return ""
 
 def get_doc_matrix(doc):
     sentences = []
