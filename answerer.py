@@ -3,22 +3,28 @@ import scipy.spatial as sp
 import collections
 import math
 
+from document_classifier.classifier import DocClassifier
+
 Sentence = collections.namedtuple('Sentence', 'text matrix')
+Doc = collections.namedtuple('Doc', 'text matrix category')
 EMBEDDING_SIZE = 300
 
 class Answerer(object):
-    def __init__(self, doc, nlp):
+    def __init__(self, docs, nlp):
         self.nlp = nlp
-        self.doc = doc
-        self.matrix = get_doc_matrix(self.doc)
+        self.docs = parse_docs(docs)
 
-    def find_answer_sentence(self, q, window):
-        smallest = self.matrix[0]
-        s_dist = compute_dist(self.matrix[0].matrix, q)
+    def find_answer_doc(self, q):
+        # TODO: Find NERs. Match NER to class. Search wihthin class
+        return None
+
+    def find_answer_sentence(self, doc_matrix, question_matrix, window):
+        smallest = doc_matrix[0]
+        s_dist = compute_dist(doc_matrix[0].matrix, q)
         s_index = 0
 
-        for i in range(len(self.matrix)):
-            s = self.matrix[i]
+        for i in range(len(doc_matrix)):
+            s = doc_matrix[i]
             dist = compute_dist(s.matrix, q)
             if dist < s_dist:
                 smallest = s
@@ -26,15 +32,24 @@ class Answerer(object):
                 s_index = i
         step = int(math.floor(float(window) / 2))
         start = s_index-step if s_index-step > 0 else 0
-        stop = s_index+step+1 if s_index+step < len(self.matrix) else len(self.matrix)
-        return self.matrix[start:stop]
+        stop = s_index+step+1 if s_index+step < len(doc_matrix) else len(doc_matrix)
+        return doc_matrix[start:stop]
 
     def get_answer(self, question, window):
         q = self.nlp(question)
+        d = self.get_answer_doc(q)
         m = get_sentence_matrix(q)
-        answer = self.find_answer_sentence(m, window)
+        answer = self.find_answer_sentence(d.matrix, m, window)
         text = [x.text.strip() for x in answer]
         return ' '.join(text)
+
+def parse_docs(docs):
+    docs = []
+    classifier = DocClassifier()
+    for doc in docs
+        d = Doc(text=doc, matrix=get_doc_matrix(doc), category=classifier.predict(doc))
+        docs.append(d)
+    return docs
 
 def get_doc_matrix(doc):
     sentences = []
@@ -47,11 +62,6 @@ def get_sentence_matrix(s):
     n = len(s)
     matrix = np.zeros((EMBEDDING_SIZE, 1))
     matrix[:,0] = s.vector
-    # K-Max Pooling
-    # if n > k:
-    #     summed = np.sum(matrix, axis=0)
-    #     idx = summed.argsort()
-    #     matrix = np.take(matrix, idx, axis=1)[:,:k]
     return matrix
 
 def compute_dist(a, b):
