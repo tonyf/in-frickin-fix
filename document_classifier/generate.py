@@ -7,15 +7,12 @@ from os.path import basename
 
 wiki = WikiApi()
 
-def write_doc_file(title, output_folder):
-    results = wiki.find(title)
-    if results:
-        article = wiki.get_article(results[0])
-        filepath = output_folder + article.heading.strip() + '.txt'
-        content = article.content.encode('utf-8').strip()
-        output = open(filepath, 'w')
-        output.write(content)
-        output.close
+def output_path(title, output_folder):
+    title = title.encode('utf-8').strip()
+    title = title.replace('/', '')
+    title = title.replace('.', '')
+    title = title.replace(' ', '_')
+    return output_folder + title.lower() + '.txt'
 
 def get_titles(input_file):
     titles = []
@@ -24,10 +21,20 @@ def get_titles(input_file):
     titles = [t.strip() for t in titles]
     return titles
 
+def write_doc_file(title, output_folder):
+    results = wiki.find(title)
+    if results:
+        article = wiki.get_article(results[0])
+        filepath = output_path(article.heading, output_folder)
+        content = article.content.encode('utf-8').strip()
+        output = open(filepath, 'w')
+        output.write(content)
+        output.close
+
 def main():
     input_file = sys.argv[1]
     article_class = input_file.split('.')[0]
-    output_folder = 'data/' + article_class + '/'
+    output_folder = 'data/train' + article_class + '/'
     titles = get_titles(input_file)
     for title in titles:
         write_doc_file(title, output_folder)
