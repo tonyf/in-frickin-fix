@@ -1,5 +1,5 @@
+
 import os
-import spacy
 import sys
 import re
 from preprocess import preprocess_docs
@@ -7,20 +7,19 @@ from preprocess import preprocess_docs
 
 
 root_dir = "data/"
-questions = []
+questions_yn = []
+questions_wh = []
 set_list = ["test_set","set1","set2","set3","set4"]
 
 #Call the spacy preprocess module
-def preprocess(setlist, nlp):
-	set_dict = preprocess_docs(root_dir,setlist,nlp)
+def preprocess(setlist):
+	set_dict = preprocess_docs(root_dir,setlist)
 	return set_dict
 
-#Removes all excess whitespace in each question in the global list questions
-def refine_questions():
-	for i in range(len(questions)):
-		q = questions[i]
-		q_ = re.sub(' +',' ',q)
-		questions[i] = q_
+#Removes all excess whitespace in the sentence passed to it
+def refine(q):
+	q_ = re.sub(' +',' ',q)
+	return q_
 
 def concat_subphrase(node, word_list):
 	#print word_list
@@ -28,20 +27,70 @@ def concat_subphrase(node, word_list):
 	for child in node.children:
 		concat_subphrase(child,word_list)
 
-def tree_questions(doc):
+def wh_questions(doc):
 	sents = doc.sents
 	for s in sents:
-
 		mv = s.root
 		if mv.pos_!="VERB":
 			continue
 
-		aux = neg = subj = number = None	
+		for child in mv.children:
+			if child.dep_ == "nsubj":
+				subj_list = []
+				concat_subphrase(child,subj_list)
+				subj_list.reverse()
+				for node in subj_list:
+					if node.ent_type_ == "PERSON":
+						wh = "Who"
+					elif node.ent_type_ == "GPE":
+						wh = "Which place"
+					else:
+						wh = "What"
+
+			elif child.dep_ == "nsubjpass":
+				subj_list = []
+				concat_subphrase(child,subj_list)
+				subj_list.reverse()
+				for node in subj_list:
+					if node.ent_type_ == "PERSON":
+						wh = "Who"
+					elif node.ent_type_ == "GPE":
+						wh = "Which place"
+					else:
+						wh = "What"
+
+		rem2 = " "
+		flag = 0
+		subj_size = len(subj_list)
+		for word in s:
+			if str(word).isspace():
+				continue
+			if word == subj_list[subj_size-1]:
+				flag = 1
+				continue
+			if flag==1:
+				rem2 += word.string
+
+		Q = wh+rem2
+		Q = Q.replace(".","?")
+		Q = refine(Q)
+		questions_wh.append(Q)
+				
+
+
+def yesno_questions(doc):
+	sents = doc.sents
+	for s in sents:
+		mv = s.root
+		if mv.pos_!="VERB":
+			continue
+
+		aux = neg = subj =  number = None	
 		position = int(mv.i)
 		#NOTE: For now, assume a sentence has max of one aux, one neg
 		for child in mv.children:
 			
-			if child.dep_ == "nsubj":
+			if child.dep_ == "nsubj" or child.dep_ == "nsubjpass":
 				if child.tag_ == "NNP" or child.tag_ == "NN":
 					number = "sing"
 				else:
@@ -64,7 +113,7 @@ def tree_questions(doc):
 			elif child.dep_ == "neg":
 				neg = child.string
 
-			elif child.dep_ == "aux":
+			elif child.dep_ == "aux" or child.dep_=="auxpass":
 				aux = child.string
 
 
@@ -83,7 +132,8 @@ def tree_questions(doc):
 		if aux:
 			aux = aux.capitalize()
 			Q = str(aux+" "+subj+" "+mv.string+" "+remaining+"?")
-			questions.append(Q)
+			Q = refine(Q)
+			questions_yn.append(Q)
 		
 		else:
 			tense = None
@@ -107,25 +157,31 @@ def tree_questions(doc):
 			if isToBe:
 				verb = verb.capitalize()
 				Q = str(verb+" "+subj+" "+remaining+"?")
-				questions.append(Q)
+				Q = refine(Q)
+				questions_yn.append(Q)
 			#Modify the verb
 			else:
 				verb = mv.lemma_
 				aux = aux.capitalize()
 				Q = str(aux+" "+subj+" "+verb+" "+remaining+"?")
-				questions.append(Q)
+				Q = refine(Q)
+				questions_yn.append(Q)
 
 
 def main():
 	setlist = ["test_set"]
 	nlp = spacy.load("en")
-	set_dict = preprocess(setlist, nlp)
+	set_dict = preprocess(setlist,nlp)
 	print "Questions for doc0 (the first doc) in test_set: "
 	print "------------------------------------------------"
 	doc1 = set_dict[set_list[0]]
-	tree_questions(doc1[0])
-	refine_questions()
-	for q in questions:
+	yesno_questions(doc1[0])
+	wh_questions(doc1[0])
+	print "\nYes/No:"
+	for q in questions_yn:
+		print q
+	print "\nWh Questions:"
+	for q in questions_wh:
 		print q
 
 
