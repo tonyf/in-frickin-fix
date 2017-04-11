@@ -1,31 +1,62 @@
 import numpy as np
-import spacy
+import scipy.spatial as sp
 import collections
+import math
+from q_classifier import QClassifier
 
 Sentence = collections.namedtuple('Sentence', 'text matrix')
 EMBEDDING_SIZE = 300
 
 class Answerer(object):
-    def __init__(self, doc):
-        self.nlp = spacy.load('en')
-        self.doc = self.nlp(doc)
-        self.matrix = get_doc_matrix(self.doc)
+    def __init__(self, set_dict, nlp):
+        self.nlp = nlp
+        self.set_dict = set_dict
 
-    def find_answer_sentence(self, q):
-        smallest = self.matrix[0]
-        s_dist = compute_dist(self.matrix[0].matrix, q)
-        for sent in self.matrix:
-            dist = compute_dist(sent.matrix, q)
+    def find_answer_sentence(self, q, doc, window):
+        matrix = get_doc_matrix(doc)
+        smallest = matrix[0]
+        s_dist = compute_dist(matrix[0].matrix, q)
+        s_index = 0
+
+        for i in range(len(matrix)):
+            s = matrix[i]
+            dist = compute_dist(s.matrix, q)
             if dist < s_dist:
-                smallest = sent
+                smallest = s
                 s_dist = dist
-        return smallest
+                s_index = i
+        step = int(math.floor(float(window) / 2))
+        start = s_index-step if s_index-step > 0 else 0
+        stop = s_index+step+1 if s_index+step < len(matrix) else len(matrix)
+        return matrix[start:stop]
 
-    def get_answer(self, question):
+    def get_answer(self, question, window):
         q = self.nlp(question)
         m = get_sentence_matrix(q)
-        answer = self.find_answer_sentence(m)
-        return answer.text
+        
+        qclassifier = QClassifier(q)
+        qtype = qclassifier.type
+        
+        doc = self.find_probable_doc(q)
+        
+        answer = self.find_answer_sentence(m, doc, window)
+        text = [x.text.strip() for x in answer]
+        return ' '.join(text)
+
+    def find_probable_doc(self, q):
+        TOPIC_SIZE = 200
+        max_sim = float("-inf")
+        best_doc = None
+        for key in self.set_dict:
+            for doc in self.set_dict[key]:
+                # If the question mentions a named entity
+                topic = doc
+                sim = topic.similarity(q)
+                if sim > max_sim:
+                    max_sim = sim
+                    best_doc = doc
+        print best_doc[0:25]
+        return best_doc
 
 def get_doc_matrix(doc):
     sentences = []
@@ -36,9 +67,8 @@ def get_doc_matrix(doc):
 
 def get_sentence_matrix(s):
     n = len(s)
-    matrix = np.zeros((EMBEDDING_SIZE, n))
-    for i in range(n):
-         matrix[:,i] = s[i].vector[:]
+    matrix = np.zeros((EMBEDDING_SIZE, 1))
+    matrix[:,0] = s.vector
     # K-Max Pooling
     # if n > k:
     #     summed = np.sum(matrix, axis=0)
@@ -50,5 +80,13 @@ def compute_dist(a, b):
     total = 0
     for i in range(a.shape[1]):
         for j in range(b.shape[1]):
-            total += np.linalg.norm(a[:,i] - b[:,j])
+            a_sum = a[:, i].sum() == 0
+            b_sum = b[:, j].sum() == 0
+
+            if a[:, i].sum() == 0:
+                total += np.linalg.norm(b[:,j])
+            elif b[:, j].sum() == 0:
+                total += np.linalg.norm(b[:,j])
+            else:
+                total += sp.distance.cosine(a[:,i].flatten(), b[:,j].flatten())
     return float(total) / (a.shape[1] * b.shape[1])
