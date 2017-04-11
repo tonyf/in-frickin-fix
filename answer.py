@@ -9,14 +9,15 @@ def main(use_terminal):
     nlp = spacy.load("en")
 
     root_dir = sys.argv[1]
-    sets = ["test_set"]
+    sets = ["set1"]
     set_dict = preprocess_docs(root_dir, sets, nlp)
-    doc1 = set_dict[sets[0]][0]
+    #doc1 = set_dict[sets[0]][0]
 
-    A = Answerer(doc1, nlp)
+    A = Answerer(set_dict, nlp)
     if use_terminal:
         questions = [unicode(raw_input("Question: "))]
     else:
+        '''
         questions =\
             [
                 u"What does the dog like to chase?",
@@ -25,6 +26,14 @@ def main(use_terminal):
                 u"Who was Clint Dempsey?",
                 u"What does Clint Dempsey think about Communism?",
                 u"Is Clint Dempsey in a good mood today?"
+            ]
+        '''
+        questions =\
+            [
+                u"Who is Lionel Messi?",
+                u"Where was Clint Dempsey born?",
+                u"Is David Beckham American?",
+                u"Which team won the league title in 2000?"
             ]
 
     for question in questions:
