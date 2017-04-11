@@ -35,7 +35,7 @@ def resolve_coreferences(doc, pronoun_list, label, is_possessive):
     new_text = []
     p_last = (0, 0)
     for p in pronoun_list:
-        candidates = [(e.text, e.start) for e in doc.ents 
+        candidates = [(e.text, e.start) for e in doc.ents
                       if e.label_ == label and e.start_char < p[0]]
         if len(candidates) > 0:
             replacement = max(candidates, key = itemgetter(1))[0]
@@ -49,39 +49,37 @@ def resolve_coreferences(doc, pronoun_list, label, is_possessive):
 
 # Pre-process all sets
 def preprocess_docs(root_dir, set_list, nlp):
-    set_dict = {}
+    docs = []
     for s in set_list:
         texts, files, topics = read_in_set(root_dir, s)
         num_files = len(files)
-                
-        set_dict[s] = []
-        
+
         for i in range(num_files):
             filename = files[i]
             txt = texts[i]
-            # Perform NLP on each file's contents     
-            #TODO: possibly throw away or handle separately section headers (lines without any periods)    
+            # Perform NLP on each file's contents
+            #TODO: possibly throw away or handle separately section headers (lines without any periods)
             doc = nlp(txt)
             #TODO: insert topic here?
-                
+
             # Co-reference resolution
             per_re = r'( He )|( he )|( Him )|( him )|( She )|( she )'
             per_list = [(m.start(), m.end()) for m in re.finditer(per_re, txt)]
             txt = resolve_coreferences(doc, per_list, "PERSON", False)
-                
+
             pos_re = r'( His )|( his )|( Hers )|( hers )'
             pos_list = [(m.start(), m.end()) for m in re.finditer(pos_re, txt)]
             txt = resolve_coreferences(doc, pos_list, "PERSON", True)
-            
+
             loc_re = r'( There )|( there )'
             loc_list = [(m.start(), m.end()) for m in re.finditer(pos_re, txt)]
             #TODO: location-based co-ref resolution
-            
+
             #TODO: there may be a better way to modify the doc than to remake it
             doc = nlp(txt)
-            set_dict[s].append(doc)
-        
-    return set_dict
+            docs.append(doc)
+
+    return docs
 
 # Testbed for pre-processing
 if __name__ == "__main__":

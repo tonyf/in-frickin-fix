@@ -9,8 +9,7 @@ from sklearn.feature_extraction.text import TfidfTransformer
 DATA_DIR = 'data/'
 MODEL_PATH = 'doc_classifier.pkl'
 
-class Classifier(object):
-
+class Classifier:
     def __init__():
         self.model = get_model()
 
