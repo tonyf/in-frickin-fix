@@ -18,8 +18,7 @@ class Answerer(object):
         entity = None
         if q.ents:
             entity = q.ents[0]
-        else:
-            # No named entities, search with biggest vector
+        # TODO: No named entities, search with biggest vector
         categories = ent2categories(entity)
         category_docs = get_category_docs(self.docs, categories)
 
