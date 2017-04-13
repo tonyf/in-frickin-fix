@@ -99,6 +99,7 @@ def preprocess_docs(root_dir, set_list, nlp):
 
     return docs
 
+
 # Testbed for pre-processing
 if __name__ == "__main__":
     root_dir = sys.argv[1]

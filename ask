@@ -1,4 +1,4 @@
 #!/bin/bash
 DOCUMENT=$1
 NUM_QUESTIONS=$2
-python -m question_generation.question DOCUMENT NUM_QUESTIONS
+python2 -m question_generation.question $DOCUMENT $NUM_QUESTIONS

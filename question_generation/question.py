@@ -5,7 +5,7 @@ import spacy
 import re
 import traceback
 import random
-from lib.preprocess import preprocess_docs
+from lib.preprocess import *
 
 
 
@@ -21,7 +21,7 @@ nlp = spacy.load("en")
 final_questions = {}
 
 #Call the spacy preprocess module
-def preprocess(setlist, nlp):
+def preprocess_question(setlist, nlp):
 	set_dict = preprocess_docs(root_dir,setlist,nlp)
 	return set_dict
 
@@ -461,9 +461,9 @@ def evaluate_questions(qn_set,id):
 
 
 
-def main():
+def test():
 	setlist = ["set1"]
-	set_dict = preprocess(setlist,nlp)
+	set_dict = preprocess_question(setlist,nlp)
 	print "Questions for doc0 (the first doc) in test_set: "
 	print "------------------------------------------------"
 	# TODO: do this for all documents
@@ -495,5 +495,31 @@ def main():
 	for q in final_questions:
 		if final_questions[q] != 0:
 			print q,":",final_questions[q]
+
+def main():
+	_,doc = read_doc(sys.argv[1])
+	doc = preprocess(doc, nlp)
+	num_questions = int(sys.argv[2])
+
+	try:
+		get_superlatives()
+		yesno_questions(doc)
+		evaluate_questions(questions_yn,1)
+		wh_questions(doc)
+		evaluate_questions(questions_wh,0)
+		subj_verb_obj_questions(doc)
+		evaluate_questions(questions_subj_verb_obj,3)
+	except Exception,e:
+		print e
+
+	final_questions = replace_superlatives().keys()
+
+	for i in range(num_questions):
+		if (i >= len(final_questions)):
+			break
+		print final_questions[i]
+
+
+
 
 main()
