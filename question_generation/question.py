@@ -420,7 +420,7 @@ def replace_superlatives():
 
 
 def get_superlatives():
-	f = open("superlatives.txt", "r")
+	f = open("lib/superlatives.txt", "r")
 	sups_dict = {}
 	line = f.readline()
 	while line != "":

@@ -1,0 +1,41 @@
+nearest,farthest
+farthest,closest
+furthest,closest
+closest,furthest
+northernmost,southernmost
+southernmost,northernmomst
+eldest,youngest
+youngest,eldest
+weakest,strongest
+strongest,weakest
+newest,oldest
+oldest,newest
+longest,shortest
+tallest,shortest
+highest,lowest
+lowest,highest
+smallest,largest
+sweetest,most bitter
+most,least 
+least,most
+fewest,most
+quickest,slowest
+fastest,slowest
+slowest,fastest
+best,worst
+worst,best
+greatest,worst
+largest,smallest
+biggest,smallest
+simplest,most complex
+richest,poorest
+poorest,richest
+happiest,saddest
+saddest,happiest
+earliest,latest
+latest,earliest
+easiest,most difficult
+softest,hardest
+easternmost,westernmost
+reddest,greenest
+widest,narrowest
