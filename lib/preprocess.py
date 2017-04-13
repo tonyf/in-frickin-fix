@@ -40,6 +40,7 @@ def read_in_set(root_dir, set_name):
     for filename in files:
         topic, text = read_doc(filename)
         topics.append(topic)
+        texts.append(text)
 
     return texts, files, topics
 

@@ -462,7 +462,7 @@ def evaluate_questions(qn_set,id):
 
 
 def main():
-	setlist = ["test_set"]
+	setlist = ["set1"]
 	set_dict = preprocess(setlist,nlp)
 	print "Questions for doc0 (the first doc) in test_set: "
 	print "------------------------------------------------"
