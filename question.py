@@ -1,4 +1,4 @@
-
+import spacy
 import os
 import sys
 import re
@@ -12,8 +12,8 @@ questions_wh = []
 set_list = ["test_set","set1","set2","set3","set4"]
 
 #Call the spacy preprocess module
-def preprocess(setlist):
-	set_dict = preprocess_docs(root_dir,setlist)
+def preprocess(setlist,nlp):
+	set_dict = preprocess_docs(root_dir,setlist,nlp)
 	return set_dict
 
 #Removes all excess whitespace in the sentence passed to it
@@ -33,6 +33,8 @@ def wh_questions(doc):
 		mv = s.root
 		if mv.pos_!="VERB":
 			continue
+
+		wh1 = aux = None
 
 		for child in mv.children:
 			if child.dep_ == "nsubj":
@@ -59,6 +61,16 @@ def wh_questions(doc):
 					else:
 						wh = "What"
 
+			elif child.dep_ == "aux" or child.dep_=="auxpass":
+				aux = child.string
+
+			if child.dep_ == "prep":
+				subj_list_prep = []
+				concat_subphrase(child,subj_list_prep)
+				for node in subj_list_prep:
+					if node.ent_type_ == "DATE":
+						wh1 = "When"
+
 		rem2 = " "
 		flag = 0
 		subj_size = len(subj_list)
@@ -75,6 +87,42 @@ def wh_questions(doc):
 		Q = Q.replace(".","?")
 		Q = refine(Q)
 		questions_wh.append(Q)
+
+		#wh1 - When questions
+		if wh1 is not None:
+			rem_when = " "
+			remaining = rem2.strip().split(' ', 1)[1]
+			remaining = remaining.replace(".","?")
+
+			subject = ""
+			for s1 in subj_list:
+				s1 = str(s1)
+				subject+=s1+" "
+
+			#Questions of type "On 25th Nov, SUBJ was blah blah blah" -> "When was SUBJ blah..?"
+			if aux:
+				Q1 = str(wh1+" "+aux+" "+subject+" "+remaining)
+				Q1 = refine(Q1)
+				questions_wh.append(Q1)
+
+			#Questions of type "On 25th Nov, SUBJ played blah blah blah" -> "When did SUBJ play blah..?"
+			else:
+				tense = None
+				if mv.tag_=="VBD" or mv.tag_=="VBN":
+				       tense = "past"
+				else:
+				       tense = "present"
+
+				if tense == "past":
+				       aux = "Did"
+
+				verb = mv.string
+
+				#Modify the verb
+				verb = mv.lemma_
+				Q1 = str(wh1+" "+aux+" "+subject+" "+verb+" "+remaining)
+				Q1 = refine(Q1)
+				questions_wh.append(Q1)
 				
 
 
@@ -115,6 +163,10 @@ def yesno_questions(doc):
 
 			elif child.dep_ == "aux" or child.dep_=="auxpass":
 				aux = child.string
+
+
+		if subj is None:
+			continue
 
 
 		#Using the position of the root verb, retrieve the rest of the sentence
@@ -168,15 +220,22 @@ def yesno_questions(doc):
 				questions_yn.append(Q)
 
 
+
+
+
 def main():
 	setlist = ["test_set"]
 	nlp = spacy.load("en")
 	set_dict = preprocess(setlist,nlp)
 	print "Questions for doc0 (the first doc) in test_set: "
 	print "------------------------------------------------"
-	doc1 = set_dict[set_list[0]]
-	yesno_questions(doc1[0])
-	wh_questions(doc1[0])
+	doc1 = set_dict[0]
+	try:
+		yesno_questions(doc1)
+		wh_questions(doc1)
+	except Exception,e:
+		print e
+
 	print "\nYes/No:"
 	for q in questions_yn:
 		print q
