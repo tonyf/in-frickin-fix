@@ -283,7 +283,6 @@ def subj_verb_obj_questions(doc):
 		if mv.pos_!="VERB":
 			continue
 
-<<<<<<< HEAD
 		aux = neg = subj = obj = iobj = number = prep = None
 		
 		for child in mv.children:
