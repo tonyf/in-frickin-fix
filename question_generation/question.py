@@ -513,16 +513,12 @@ def main():
 		print e
 
 	final_questions = replace_superlatives()
-	fq_keys = final_questions.keys()
+	final_q = [x for x in final_questions.keys() if final_questions[x] != 0]
 
 	for i in range(num_questions):
-		if (i >= len(fq_keys)):
+		if (i >= len(final_q)):
 			break
-		if final_questions[fq_keys[i]] == 0:
-			continue
-		print fq_keys[i]
-
-
+		print final_q[i]
 
 
 main()
