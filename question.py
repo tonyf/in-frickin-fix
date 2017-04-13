@@ -1,6 +1,7 @@
 import spacy
 import os
 import sys
+import spacy
 import re
 from preprocess import preprocess_docs
 
@@ -12,7 +13,7 @@ questions_wh = []
 set_list = ["test_set","set1","set2","set3","set4"]
 
 #Call the spacy preprocess module
-def preprocess(setlist,nlp):
+def preprocess(setlist, nlp):
 	set_dict = preprocess_docs(root_dir,setlist,nlp)
 	return set_dict
 
@@ -164,6 +165,8 @@ def yesno_questions(doc):
 			elif child.dep_ == "aux" or child.dep_=="auxpass":
 				aux = child.string
 
+		if subj is None:
+			continue
 
 		if subj is None:
 			continue
@@ -220,7 +223,16 @@ def yesno_questions(doc):
 				questions_yn.append(Q)
 
 
-
+def superlative_questions(doc):
+	sents = doc.sents
+	for s in sents:
+		mv = s.root
+		for word in mv.subtree:
+			if word.tag_ == "JJS":
+				print "Root:", mv
+				print "Superlative: ", word
+				print "Sentence: ", s
+				print "\n"
 
 
 def main():
@@ -231,6 +243,7 @@ def main():
 	print "------------------------------------------------"
 	doc1 = set_dict[0]
 	try:
+		# superlative_questions(doc1)
 		yesno_questions(doc1)
 		wh_questions(doc1)
 	except Exception,e:
@@ -242,7 +255,6 @@ def main():
 	print "\nWh Questions:"
 	for q in questions_wh:
 		print q
-
 
 
 main()
