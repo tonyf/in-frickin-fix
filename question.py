@@ -4,6 +4,7 @@ import sys
 import spacy
 import re
 import traceback
+import random
 from preprocess import preprocess_docs
 
 
@@ -278,8 +279,8 @@ def subj_verb_obj_questions(doc):
 	sents = doc.sents
 	for s in sents:
 		mv = s.root
-		print "-----------"
-		print s
+		# print "-----------"
+		# print s
 		if mv.pos_!="VERB":
 			continue
 
@@ -357,7 +358,7 @@ def subj_verb_obj_questions(doc):
 				Q = str("What "+aux+" "+subj+" "+mv.string+" "+prep+"?")
 			Q = refine(Q)
 			questions_subj_verb_obj.append(Q)
-			print "\t", Q
+			# print "\t", Q
 		
 		else:
 			tense = None
@@ -387,7 +388,7 @@ def subj_verb_obj_questions(doc):
 
 				Q = refine(Q)
 				questions_subj_verb_obj.append(Q)
-				print "\t", Q
+				# print "\t", Q
 			#Modify the verb
 			else:
 				verb = mv.lemma_
@@ -398,18 +399,39 @@ def subj_verb_obj_questions(doc):
 					Q = str("What "+aux+" "+subj+" "+verb+" "+prep+"?")
 				Q = refine(Q)
 				questions_subj_verb_obj.append(Q)
-				print "\t", Q
+				# print "\t", Q
 
-def superlative_questions(doc):
-	sents = doc.sents
-	for s in sents:
-		mv = s.root
-		for word in mv.subtree:
-			if word.tag_ == "JJS":
-				print "Root:", mv
-				print "Superlative: ", word
-				print "Sentence: ", s
-				print "\n"
+
+def replace_superlatives():
+	sups_dict = get_superlatives()
+	new_questions = {}
+	for question, score in final_questions.iteritems():
+		sup = False
+		split_question = question.split()
+	# TODO: make better
+		if score == 1:
+			for i, word in enumerate(split_question):
+				if word in sups_dict:
+					sup = True
+					if random.random() > 0.5:
+						split_question[i] = sups_dict[word]
+		new_questions[(" ").join(split_question)] = score
+		# if sup:
+		# 	print (" ").join(split_question)
+	return new_questions
+
+
+def get_superlatives():
+	f = open("superlatives.txt", "r")
+	sups_dict = {}
+	line = f.readline()
+	while line != "":
+		sups = line.split(",")
+		sups_dict[sups[0]] = sups[1].strip()
+		line = f.readline()
+	return sups_dict
+
+
 """
 If y/n question, score is 1
 If when question, score is 4
@@ -450,6 +472,7 @@ def main():
 	doc1 = set_dict[0]
 	try:
 		# superlative_questions(doc1)
+		get_superlatives()
 		yesno_questions(doc1)
 		evaluate_questions(questions_yn,1)
 		wh_questions(doc1)
@@ -468,6 +491,7 @@ def main():
 	# for q in questions_subj_verb_obj:
 	# 	print q
 
+	final_questions = replace_superlatives()
 
 	print "All questions & their scores:"
 	for q in final_questions:
