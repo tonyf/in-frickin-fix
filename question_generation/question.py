@@ -512,11 +512,14 @@ def main():
 	except Exception,e:
 		print e
 
-	final_questions = replace_superlatives().keys()
+	final_questions = replace_superlatives()
+	fq_keys = final_questions.keys()
 
 	for i in range(num_questions):
-		if (i >= len(final_questions)):
+		if (i >= len(fq_keys)):
 			break
+		if final_questions[fq_keys[i]] == 0:
+			continue
 		print final_questions[i]
 
 
