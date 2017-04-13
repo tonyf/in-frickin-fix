@@ -3,9 +3,8 @@ from document_classifier.classifier import *
 import scipy.spatial as sp
 import numpy as np
 
-
+TOPIC_SIZE = 200
 EMBEDDING_SIZE = 300
-
 Sentence = namedtuple('Sentence', 'text matrix')
 
 def get_doc_title(doc):

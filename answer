@@ -1,4 +1,4 @@
 #!/bin/bash
 DOCUMENT=$1
 QUESTIONS=$2
-python question_answering/answer.py DOCUMENT QUESTIONS
+python -m question_answering.answer DOCUMENT QUESTIONS

@@ -2,7 +2,7 @@ import spacy
 import sys
 import argparse
 from answerer import Answerer
-from tools.preprocess import *
+from lib.preprocess import *
 
 # Example: python main.py ./data
 

@@ -5,7 +5,7 @@ import spacy
 import re
 import traceback
 import random
-from tools.preprocess import preprocess_docs
+from lib.preprocess import preprocess_docs
 
 
 

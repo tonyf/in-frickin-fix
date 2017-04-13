@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
 DATA_DIR = 'data/'
-MODEL_PATH = 'doc_classifier.pkl'
+MODEL_PATH = 'question_answering/document_classifier/doc_classifier.pkl'
 
 class DocClassifier:
     def __init__(self):

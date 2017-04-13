@@ -5,8 +5,6 @@ import scipy.spatial as sp
 from doc_utils import *
 from q_classifier import *
 
-TOPIC_SIZE = 200
-
 class Answerer(object):
     def __init__(self, doc, nlp):
         self.nlp = nlp
