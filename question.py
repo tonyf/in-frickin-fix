@@ -3,7 +3,9 @@ import os
 import sys
 import spacy
 import re
+import traceback
 from preprocess import preprocess_docs
+
 
 
 
@@ -12,6 +14,11 @@ questions_yn = []
 questions_wh = []
 questions_subj_verb_obj = []
 set_list = ["test_set","set1","set2","set3","set4"]
+nlp = spacy.load("en")
+
+
+#Dict of final questions and their scores
+final_questions = {}
 
 #Call the spacy preprocess module
 def preprocess(setlist, nlp):
@@ -108,7 +115,8 @@ def wh_questions(doc):
 		questions_wh.append(Q)
 
 		#wh1 - When questions
-		if wh1 is not None:
+		list_of_rem = rem2.strip().split(' ',1)
+		if wh1 is not None and len(list_of_rem)>1:
 			rem_when = " "
 			remaining = rem2.strip().split(' ', 1)[1]
 			remaining = remaining.replace(".","?")
@@ -133,7 +141,7 @@ def wh_questions(doc):
 				       tense = "present"
 
 				if tense == "past":
-				       aux = "Did"
+				       aux = "did"
 
 				verb = mv.string
 
@@ -142,6 +150,7 @@ def wh_questions(doc):
 				Q1 = str(wh1+" "+aux+" "+subject+" "+verb+" "+remaining)
 				Q1 = refine(Q1)
 				questions_wh.append(Q1)
+
 				
 
 
@@ -235,7 +244,35 @@ def yesno_questions(doc):
 				Q = str(aux+" "+subj+" "+verb+" "+remaining+"?")
 				Q = refine(Q)
 				questions_yn.append(Q)
+"""
+Function that determines if a question needs to be removed
+Current criteria for removing are:
+1. Too short (< 5) or too long (> 20)
+2. If the subject is: "he/she/him/her/it/its/it's/"
+"""
+def remove(question):
+	pronouns = ['he','him','his','she','her','hers','they','them','theirs','it','its']
+	#doc = nlp(unicode(question, encoding = 'ascii', errors = 'ignore'))
+	# for q in doc.sents:
+	# 	if q.root is not None:
+	# 		mv = q.root
+	# 	else:
+	# 		print "this shouldn't even happen"
+	# 		return 0
 
+	# 	for child in mv.children:
+	# 		if child.dep_ == "nsubj" or child.dep_ == "nsubjpass":
+	# 			if child in pronouns:
+	# 				return 0
+
+	for word in question.split():
+		if word in pronouns:
+			return 1
+
+	if len(question.split()) < 5 or len(question.split()) >= 20:
+		return 1
+
+	return 0
 
 def subj_verb_obj_questions(doc):
 	sents = doc.sents
@@ -246,6 +283,7 @@ def subj_verb_obj_questions(doc):
 		if mv.pos_!="VERB":
 			continue
 
+<<<<<<< HEAD
 		aux = neg = subj = obj = iobj = number = prep = None
 		
 		for child in mv.children:
@@ -374,10 +412,32 @@ def superlative_questions(doc):
 				print "Sentence: ", s
 				print "\n"
 
+#If y/n question, score is 1
+#If when question, score is 4
+#Questions that need to be REMOVED are given a score of 0
+def score(question,yesno):
+	if remove(question) == 1:
+		return 0
+
+	if yesno == 1:
+		return 1
+
+	if "when" in question.split():
+		return 4
+
+	return 5
+
+
+
+def evaluate_questions(qn_set,yesno):
+	for question in qn_set:
+		sc = score(question,yesno)
+		final_questions[question] = sc
+
+
 
 def main():
 	setlist = ["test_set"]
-	nlp = spacy.load("en")
 	set_dict = preprocess(setlist,nlp)
 	print "Questions for doc0 (the first doc) in test_set: "
 	print "------------------------------------------------"
@@ -385,9 +445,12 @@ def main():
 	doc1 = set_dict[0]
 	try:
 		# superlative_questions(doc1)
-		# yesno_questions(doc1)
-		# wh_questions(doc1)
+		yesno_questions(doc1)
+		evaluate_questions(questions_yn,1)
+		wh_questions(doc1)
+		evaluate_questions(questions_wh,0)
 		subj_verb_obj_questions(doc1)
+		evaluate_questions(questions_subj_verb_obj,0)
 	except Exception,e:
 		print e
 
@@ -400,5 +463,10 @@ def main():
 	# for q in questions_subj_verb_obj:
 	# 	print q
 
+
+	print "All questions & their scores:"
+	for q in final_questions:
+		if final_questions[q] != 0:
+			print q,":",final_questions[q]
 
 main()
