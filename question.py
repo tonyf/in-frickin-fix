@@ -350,7 +350,7 @@ def subj_verb_obj_questions(doc):
 		# TODO: need rest??
 
 		if aux:
-			aux = aux.capitalize()
+			#aux = aux.capitalize()
 			if prep is None:
 				Q = str("What "+aux+" "+subj+" "+mv.string+"?")
 			else:
@@ -370,16 +370,16 @@ def subj_verb_obj_questions(doc):
 				isToBe = True
 
 			if tense == "present" and number == "sing":
-				aux = "Does"
+				aux = "does"
 			elif tense == "present" and number == "plural":
-				aux = "Do"
+				aux = "do"
 			elif tense == "past":
-				aux = "Did"
+				aux = "did"
 
 			verb = mv.string
 			
 			if isToBe:
-				verb = verb.capitalize()
+				#verb = verb.capitalize()
 				if prep is None:
 					Q = str("What "+verb+" "+subj+"?")
 				else:
@@ -391,7 +391,7 @@ def subj_verb_obj_questions(doc):
 			#Modify the verb
 			else:
 				verb = mv.lemma_
-				aux = aux.capitalize()
+				#aux = aux.capitalize()
 				if prep is None:
 					Q = str("What "+aux+" "+subj+" "+verb+"?")
 				else:
@@ -410,15 +410,21 @@ def superlative_questions(doc):
 				print "Superlative: ", word
 				print "Sentence: ", s
 				print "\n"
-
-#If y/n question, score is 1
-#If when question, score is 4
-#Questions that need to be REMOVED are given a score of 0
-def score(question,yesno):
+"""
+If y/n question, score is 1
+If when question, score is 4
+If sub_verb question, score is 3
+Questions that need to be REMOVED are given a score of 0
+Default score is 5
+"""
+def score(question,id):
 	if remove(question) == 1:
 		return 0
 
-	if yesno == 1:
+	if id == 3:
+		return 3
+
+	if id == 1:
 		return 1
 
 	if "when" in question.split():
@@ -428,9 +434,9 @@ def score(question,yesno):
 
 
 
-def evaluate_questions(qn_set,yesno):
+def evaluate_questions(qn_set,id):
 	for question in qn_set:
-		sc = score(question,yesno)
+		sc = score(question,id)
 		final_questions[question] = sc
 
 
@@ -449,7 +455,7 @@ def main():
 		wh_questions(doc1)
 		evaluate_questions(questions_wh,0)
 		subj_verb_obj_questions(doc1)
-		evaluate_questions(questions_subj_verb_obj,0)
+		evaluate_questions(questions_subj_verb_obj,3)
 	except Exception,e:
 		print e
 
