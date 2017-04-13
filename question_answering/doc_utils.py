@@ -1,15 +1,12 @@
 from collections import defaultdict, namedtuple
 from document_classifier.classifier import *
+import scipy.spatial as sp
+import numpy as np
 
-Sentence = collections.namedtuple('Sentence', 'text matrix')
 
-def parse_docs(docs):
-    doc_dict = defaultdict(list)
-    classifier = DocClassifier()
-    for doc in docs
-        category = classifier.predict(doc.text)
-        doc_dict[category].append(doc)
-    return doc_dict
+EMBEDDING_SIZE = 300
+
+Sentence = namedtuple('Sentence', 'text matrix')
 
 def get_doc_title(doc):
     # TODO: reliably parse title from document

@@ -14,13 +14,13 @@ class QType:
     UNKNOWN = 8
 
 def qclassify(question):
-    qtxt = question.text
-    split_sent = re.findall(r'[\w]+', self.qtext)
+    qtext = question.text
+    split_sent = re.findall(r'[\w]+', qtext)
     split_sent = [x.lower() for x in split_sent]
     N = len(split_sent)
 
     # Check for leading auxiliary verb => YESNO
-    sent = self.question.sents.next()
+    sent = question.sents.next()
     mv = sent.root
     for child in mv.children:
         if child.dep_ == "aux" and child.idx == 0:

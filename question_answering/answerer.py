@@ -5,49 +5,34 @@ import scipy.spatial as sp
 from doc_utils import *
 from q_classifier import *
 
-EMBEDDING_SIZE = 300
 TOPIC_SIZE = 200
 
 class Answerer(object):
-    def __init__(self, docs, nlp):
+    def __init__(self, doc, nlp):
         self.nlp = nlp
-        self.docs = parse_docs(docs)
+        self.doc = doc
+        self.matrix = get_doc_matrix(doc)
 
-    def find_answer_doc(self, question):
-        q = self.nlp(question)
-        entity = None
-        if q.ents:
-            entity = q.ents[0]
-        # TODO: No named entities, search with biggest vector
-        categories = ent2categories(entity)
-        category_docs = get_category_docs(self.docs, categories)
-
-        best_doc = None
-        max_sim = float("-inf")
-        for doc in category_docs:
-            title = get_doc_title(doc)
-            sim = title.similarity(entity)
-            if sim > max_sim:
-                max_sim = sim:
-                best_doc = doc
-        return best_doc
-
-    def find_answer_sentence(self, q, doc, window):
-        matrix = get_doc_matrix(doc)
-        smallest = matrix[0]
-        s_dist = compute_dist(matrix[0].matrix, q)
+    def find_answer_sentence(self, q, window):
+        smallest = self.matrix[0]
+        s_dist = compute_dist(self.matrix[0].matrix, q)
         s_index = 0
 
-        for i in range(len(matrix)):
-            s = matrix[i]
-        stop = s_index+step+1 if s_index+step < len(doc_matrix) else len(doc_matrix)
-        return doc_matrix[start:stop]
+        for i in range(len(self.matrix)):
+            s = self.matrix[i]
+            dist = compute_dist(s.matrix, q)
+            if dist < s_dist:
+                smallest = s
+                s_dist = dist
+                s_index = i
+        step = int(math.floor(float(window) / 2))
+        start = s_index-step if s_index-step > 0 else 0
+        stop = s_index+step+1 if s_index+step < len(self.matrix) else len(self.matrix)
+        return self.matrix[start:stop]
 
     def get_answer(self, question, window):
         q = self.nlp(question)
-        qtype = qclassify(q)
         m = get_sentence_matrix(q)
-        doc = self.find_answer_doc(q)
-        answer = self.find_answer_sentence(m, doc, window)
+        answer = self.find_answer_sentence(m, window)
         text = [x.text.strip() for x in answer]
         return ' '.join(text)

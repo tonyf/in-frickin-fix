@@ -1,3 +1,4 @@
+import os.path
 import cPickle
 
 from sklearn import datasets
@@ -9,8 +10,8 @@ from sklearn.feature_extraction.text import TfidfTransformer
 DATA_DIR = 'data/'
 MODEL_PATH = 'doc_classifier.pkl'
 
-class Classifier:
-    def __init__():
+class DocClassifier:
+    def __init__(self):
         self.model = get_model()
 
     def predict(self, doc):
@@ -21,7 +22,7 @@ def train_model():
     train = datasets.load_files(DATA_DIR)
     text_clf = Pipeline([('vect', CountVectorizer()),
                             ('tfidf', TfidfTransformer()),
-                            ('clf', MultinomialNB()),
+                            ('clf', MultinomialNB())])
     model = text_clf.fit(train.data, train.target)
     return model
 
@@ -32,6 +33,8 @@ def save_model(model):
 
 def load_model():
     model = None
+    if not os.path.isfile(MODEL_PATH):
+        return None
     with open(MODEL_PATH, 'rb') as f:
         model = cPickle.load(f)
     return model

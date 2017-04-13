@@ -1,11 +1,12 @@
 import spacy
 import sys
+import argparse
 from answerer import Answerer
-from preprocess import preprocess_docs
+from tools.preprocess import *
 
 # Example: python main.py ./data
 
-def main(use_terminal):
+def test():
     nlp = spacy.load("en")
 
     root_dir = sys.argv[1]
@@ -41,6 +42,22 @@ def main(use_terminal):
             print "Q: {0} | A: {1}".format(question, answer)
 
 
+def answer_questions(doc_text, questions):
+    nlp = spacy.load("en")
+    doc = preprocess(doc_text, nlp)
+    A = Answerer(doc, nlp)
+    for q in questions:
+        if len(q) == 0:
+            print " "
+        else:
+            answer = A.get_answer(q, 0)
+            print answer
+
+def main():
+    _, doc_text = read_doc(sys.argv[1])
+    questions = read_questions(sys.argv[2])
+    answer_questions(doc_text, questions)
+
+
 if __name__ == '__main__':
-    use_terminal = False
-    main(use_terminal)
+    main()
