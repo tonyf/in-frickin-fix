@@ -520,7 +520,7 @@ def main():
 			break
 		if final_questions[fq_keys[i]] == 0:
 			continue
-		print final_questions[i]
+		print fq_keys[i]
 
 
 
