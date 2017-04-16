@@ -49,7 +49,7 @@ def resolve_coreferences(doc, pronoun_list, label, is_possessive):
     new_text = []
     p_last = (0, 0)
     for p in pronoun_list:
-        candidates = [(e.text, e.start) for e in doc.ents
+        candidates = [(e.text, e.start_char) for e in doc.ents
                       if e.label_ == label and e.start_char < p[0]]
         if len(candidates) > 0:
             replacement = max(candidates, key = itemgetter(1))[0]
@@ -69,19 +69,20 @@ def preprocess(txt, nlp):
 
     # Co-reference resolution
     per_re = r'( He )|( he )|( Him )|( him )|( She )|( she )'
-    per_list = [(m.start(), m.end()) for m in re.finditer(per_re, txt)]
-    txt = resolve_coreferences(doc, per_list, "PERSON", False)
+    per_list = [(m.start(), m.end()) for m in re.finditer(per_re, doc.text)]
+    new_txt = resolve_coreferences(doc, per_list, "PERSON", False)
 
     pos_re = r'( His )|( his )|( Hers )|( hers )'
-    pos_list = [(m.start(), m.end()) for m in re.finditer(pos_re, txt)]
-    txt = resolve_coreferences(doc, pos_list, "PERSON", True)
+    pos_list = [(m.start(), m.end()) for m in re.finditer(pos_re, new_txt)]
+    doc = nlp(new_txt)
+    new_txt = resolve_coreferences(doc, pos_list, "PERSON", True)
 
     loc_re = r'( There )|( there )'
-    loc_list = [(m.start(), m.end()) for m in re.finditer(pos_re, txt)]
+    loc_list = [(m.start(), m.end()) for m in re.finditer(loc_re, new_txt)]
     #TODO: location-based co-ref resolution
 
     #TODO: there may be a better way to modify the doc than to remake it
-    doc = nlp(txt)
+    doc = nlp(new_txt)
     return doc
 
 
