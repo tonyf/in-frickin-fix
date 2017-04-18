@@ -483,11 +483,14 @@ def score(question,id):
 	if remove(question) == 1:
 		return 0
 
+	"""
 	#Check grammatical correctness of question
 	tool = language_check.LanguageTool('en-US')
         matches = tool.check(question)
         if len(matches)>2:
 		return 0
+	"""
+
 
 	if id == 3:
 		return 3
