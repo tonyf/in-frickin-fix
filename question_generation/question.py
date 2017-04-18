@@ -30,7 +30,9 @@ def preprocess_question(setlist, nlp):
 #Removes all excess whitespace in the sentence passed to it
 def refine(q):
 	q_ = re.sub(' +',' ',q)
-	return q_
+	q1 = q_.replace(" 's ","'s ")
+	q2 = q1.replace(" , ",", ")
+	return q2
 
 def get_subphrase(node, word_list, sent):
 	begin = sent[0].i
@@ -401,9 +403,6 @@ def subj_verb_obj_questions(doc):
 			Q = refine(Q)
 			questions_subj_verb_obj.append(Q)
 			question_answers[Q] = s
-			# print "-----------"
-			# print s
-			# print "\t", Q
 
 		else:
 			tense = None
@@ -434,9 +433,6 @@ def subj_verb_obj_questions(doc):
 				Q = refine(Q)
 				questions_subj_verb_obj.append(Q)
 				question_answers[Q] = s
-				# print "-----------"
-				# print s
-				# print "\t", Q
 			#Modify the verb
 			else:
 				verb = mv.lemma_
@@ -448,9 +444,6 @@ def subj_verb_obj_questions(doc):
 				Q = refine(Q)
 				questions_subj_verb_obj.append(Q)
 				question_answers[Q] = s
-				# print "-----------"
-				# print s
-				# print "\t", Q
 
 
 def replace_superlatives():
