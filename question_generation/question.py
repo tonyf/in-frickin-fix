@@ -1,15 +1,13 @@
 import spacy
 import os
 import sys
-import spacy
 import re
 import traceback
 import random
 import language_check
 import copy
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from lib.preprocess import *
-
-
 
 root_dir = "data/"
 questions_yn = []
@@ -32,11 +30,11 @@ def refine(q):
 	q_ = re.sub(' +',' ',q)
 	return q_
 
-def get_prep_phrase(node, word_list, sent):
+def get_subphrase(node, word_list, sent):
 	begin = sent[0].i
 	word_list.append(node)
 	for child in node.children:
-		get_prep_phrase(child,word_list,sent)
+		get_subphrase(child,word_list,sent)
 	min_pos = float('inf')
 	max_pos = -float('inf')
 	for word in word_list:
@@ -69,8 +67,8 @@ def wh_questions(doc):
 			for child in mv.children:
 				if child.dep_ == "nsubj":
 					subj_list = []
-					concat_subphrase(child,subj_list)
-					subj_list.reverse()
+					subj_list = get_subphrase(child,subj_list,s)
+					# subj_list.reverse()
 					for node in subj_list:
 						if node.ent_type_ == "PERSON":
 							wh = "Who"
@@ -81,8 +79,8 @@ def wh_questions(doc):
 
 				elif child.dep_ == "nsubjpass":
 					subj_list = []
-					concat_subphrase(child,subj_list)
-					subj_list.reverse()
+					subj_list = get_subphrase(child,subj_list,s)
+					# subj_list.reverse()
 					for node in subj_list:
 						if node.ent_type_ == "PERSON":
 							wh = "Who"
@@ -96,7 +94,7 @@ def wh_questions(doc):
 
 				if child.dep_ == "prep":
 					subj_list_prep = []
-					concat_subphrase(child,subj_list_prep)
+					subj_list = get_subphrase(child,subj_list_prep,s)
 					for node in subj_list_prep:
 						if node.ent_type_ == "DATE":
 							wh1 = "When"
@@ -179,7 +177,7 @@ def yesno_questions(doc):
 					number = "plural"
 
 				subj_list = []
-				concat_subphrase(child,subj_list)
+				subj_list = get_subphrase(child,subj_list,s)
 				#Go through every word in sub phrase and remove caps if not a named entity
 				new_subj_list = []
 				for node in subj_list:
@@ -189,7 +187,7 @@ def yesno_questions(doc):
 						sub_word = str(node.string.lower())
 					new_subj_list.append(sub_word)
 
-				new_subj_list.reverse()
+				# new_subj_list.reverse()
 				subj = " ".join(new_subj_list)
 
 			elif child.dep_ == "neg":
@@ -322,7 +320,7 @@ def subj_verb_obj_questions(doc):
 		if mv.pos_!="VERB":
 			continue
 
-		aux = neg = subj = obj = iobj = number = prep = None
+		aux = neg = subj = obj = iobj = pobj = number = prep = None
 
 		for child in mv.children:
 
@@ -333,7 +331,7 @@ def subj_verb_obj_questions(doc):
 					number = "plural"
 
 				subj_list = []
-				concat_subphrase(child,subj_list)
+				subj_list = get_subphrase(child,subj_list,s)
 				#Go through every word in sub phrase and remove caps if not a named entity
 				new_subj_list = []
 				for node in subj_list:
@@ -343,27 +341,28 @@ def subj_verb_obj_questions(doc):
 						sub_word = str(node.string.lower())
 					new_subj_list.append(sub_word)
 
-				new_subj_list.reverse()
+				# new_subj_list.reverse()
 				subj = " ".join(new_subj_list)
 
 			elif child.dep_ == "dobj":
-				dobj = child.string
-				obj_list = []
-				concat_subphrase(child,obj_list)
-				new_obj_list = []
-				for node in obj_list:
-					if node.ent_type_:
-						obj_word = str(node.string.capitalize())
-					else:
-						obj_word = str(node.string.lower())
-					new_obj_list.append(obj_word)
-				new_obj_list.reverse()
-				obj = " ".join(new_obj_list)
+				if child.tag_ == "NNP" or child.tag_ == "NN" or child.tag_ == "NNPS" or child.tag_ == "NNS":
+					dobj = child.string
+					obj_list = []
+					obj_list = get_subphrase(child,obj_list,s)
+					new_obj_list = []
+					for node in obj_list:
+						if node.ent_type_:
+							obj_word = str(node.string.capitalize())
+						else:
+							obj_word = str(node.string.lower())
+						new_obj_list.append(obj_word)
+					# new_obj_list.reverse()
+					obj = " ".join(new_obj_list)
 
 			elif child.dep_ == "prep":
 				prep = child.string
 				prep_list = []
-				prep_list = get_prep_phrase(child,prep_list,s)
+				prep_list = get_subphrase(child,prep_list,s)
 				new_prep_list = []
 				for node in prep_list:
 					if node.ent_type_:
@@ -383,10 +382,11 @@ def subj_verb_obj_questions(doc):
 			elif child.dep_ == 'iobj' or child.dep_ == 'dative':
 				iobj = "exists"
 
-		if subj is None or obj is None or not (iobj is None):
-			continue
+			elif child.dep_ == 'pobj':
+				pobj = "exists"
 
-		# TODO: need rest??
+		if subj is None or obj is None or not (iobj is None) or not (pobj is None):
+			continue
 
 		if aux:
 			#aux = aux.capitalize()
@@ -396,6 +396,8 @@ def subj_verb_obj_questions(doc):
 				Q = str("What "+aux+" "+subj+" "+mv.string+" "+prep+"?")
 			Q = refine(Q)
 			questions_subj_verb_obj.append(Q)
+			# print "-----------"
+			# print s
 			# print "\t", Q
 
 		else:
@@ -426,6 +428,8 @@ def subj_verb_obj_questions(doc):
 
 				Q = refine(Q)
 				questions_subj_verb_obj.append(Q)
+				# print "-----------"
+				# print s
 				# print "\t", Q
 			#Modify the verb
 			else:
@@ -437,6 +441,8 @@ def subj_verb_obj_questions(doc):
 					Q = str("What "+aux+" "+subj+" "+verb+" "+prep+"?")
 				Q = refine(Q)
 				questions_subj_verb_obj.append(Q)
+				# print "-----------"
+				# print s
 				# print "\t", Q
 
 
