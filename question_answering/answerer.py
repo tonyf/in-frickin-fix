@@ -15,11 +15,12 @@ class Answerer(object):
         smallest = self.matrix[0]
         s_dist = compute_dist(self.matrix[0].matrix, q)
         s_index = 0
-
+        qtype = qclassify(q)
+        
         for i in range(len(self.matrix)):
             s = self.matrix[i]
             dist = compute_dist(s.matrix, q)
-            if dist < s_dist:
+            if dist < s_dist and has_type(s, qtype):
                 smallest = s
                 s_dist = dist
                 s_index = i
