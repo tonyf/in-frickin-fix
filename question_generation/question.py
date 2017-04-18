@@ -5,6 +5,8 @@ import spacy
 import re
 import traceback
 import random
+import language_check
+import copy
 from lib.preprocess import *
 
 
@@ -56,100 +58,105 @@ def concat_subphrase(node, word_list):
 def wh_questions(doc):
 	sents = doc.sents
 	for s in sents:
-		mv = s.root
-		if mv.pos_!="VERB":
-			continue
 
-		wh1 = aux = None
-
-		for child in mv.children:
-			if child.dep_ == "nsubj":
-				subj_list = []
-				concat_subphrase(child,subj_list)
-				subj_list.reverse()
-				for node in subj_list:
-					if node.ent_type_ == "PERSON":
-						wh = "Who"
-					elif node.ent_type_ == "GPE":
-						wh = "Which place"
-					else:
-						wh = "What"
-
-			elif child.dep_ == "nsubjpass":
-				subj_list = []
-				concat_subphrase(child,subj_list)
-				subj_list.reverse()
-				for node in subj_list:
-					if node.ent_type_ == "PERSON":
-						wh = "Who"
-					elif node.ent_type_ == "GPE":
-						wh = "Which place"
-					else:
-						wh = "What"
-
-			elif child.dep_ == "aux" or child.dep_=="auxpass":
-				aux = child.string
-
-			if child.dep_ == "prep":
-				subj_list_prep = []
-				concat_subphrase(child,subj_list_prep)
-				for node in subj_list_prep:
-					if node.ent_type_ == "DATE":
-						wh1 = "When"
-
-		rem2 = " "
-		flag = 0
-		subj_size = len(subj_list)
-		for word in s:
-			if str(word).isspace():
+		try:
+			mv = s.root
+			if mv.pos_!="VERB":
 				continue
-			if word == subj_list[subj_size-1]:
-				flag = 1
-				continue
-			if flag==1:
-				rem2 += word.string
 
-		Q = wh+rem2
-		Q = Q.replace(".","?")
-		Q = refine(Q)
-		questions_wh.append(Q)
+			wh1 = aux = None
 
-		#wh1 - When questions
-		list_of_rem = rem2.strip().split(' ',1)
-		if wh1 is not None and len(list_of_rem)>1:
-			rem_when = " "
-			remaining = rem2.strip().split(' ', 1)[1]
-			remaining = remaining.replace(".","?")
+			for child in mv.children:
+				if child.dep_ == "nsubj":
+					subj_list = []
+					concat_subphrase(child,subj_list)
+					subj_list.reverse()
+					for node in subj_list:
+						if node.ent_type_ == "PERSON":
+							wh = "Who"
+						elif node.ent_type_ == "GPE":
+							wh = "Which place"
+						else:
+							wh = "What"
 
-			subject = ""
-			for s1 in subj_list:
-				s1 = str(s1)
-				subject+=s1+" "
+				elif child.dep_ == "nsubjpass":
+					subj_list = []
+					concat_subphrase(child,subj_list)
+					subj_list.reverse()
+					for node in subj_list:
+						if node.ent_type_ == "PERSON":
+							wh = "Who"
+						elif node.ent_type_ == "GPE":
+							wh = "Which place"
+						else:
+							wh = "What"
 
-			#Questions of type "On 25th Nov, SUBJ was blah blah blah" -> "When was SUBJ blah..?"
-			if aux:
-				Q1 = str(wh1+" "+aux+" "+subject+" "+remaining)
-				Q1 = refine(Q1)
-				questions_wh.append(Q1)
+				elif child.dep_ == "aux" or child.dep_=="auxpass":
+					aux = child.string
 
-			#Questions of type "On 25th Nov, SUBJ played blah blah blah" -> "When did SUBJ play blah..?"
-			else:
-				tense = None
-				if mv.tag_=="VBD" or mv.tag_=="VBN":
-				       tense = "past"
+				if child.dep_ == "prep":
+					subj_list_prep = []
+					concat_subphrase(child,subj_list_prep)
+					for node in subj_list_prep:
+						if node.ent_type_ == "DATE":
+							wh1 = "When"
+
+			rem2 = " "
+			flag = 0
+			subj_size = len(subj_list)
+			for word in s:
+				if str(word).isspace():
+					continue
+				if word == subj_list[subj_size-1]:
+					flag = 1
+					continue
+				if flag==1:
+					rem2 += word.string
+
+			Q = wh+rem2
+			Q = Q.replace(".","?")
+			Q = refine(Q)
+			questions_wh.append(Q)
+
+			#wh1 - When questions
+			list_of_rem = rem2.strip().split(' ',1)
+			if wh1 is not None and len(list_of_rem)>1:
+				rem_when = " "
+				remaining = rem2.strip().split(' ', 1)[1]
+				remaining = remaining.replace(".","?")
+
+				subject = ""
+				for s1 in subj_list:
+					s1 = str(s1)
+					subject+=s1+" "
+
+				#Questions of type "On 25th Nov, SUBJ was blah blah blah" -> "When was SUBJ blah..?"
+				if aux:
+					Q1 = str(wh1+" "+aux+" "+subject+" "+remaining)
+					Q1 = refine(Q1)
+					questions_wh.append(Q1)
+
+				#Questions of type "On 25th Nov, SUBJ played blah blah blah" -> "When did SUBJ play blah..?"
 				else:
-				       tense = "present"
+					tense = None
+					if mv.tag_=="VBD" or mv.tag_=="VBN":
+					       tense = "past"
+					else:
+					       tense = "present"
 
-				if tense == "past":
-				       aux = "did"
+					if tense == "past":
+					       aux = "did"
 
-				verb = mv.string
+					verb = mv.string
 
-				#Modify the verb
-				verb = mv.lemma_
-				Q1 = str(wh1+" "+aux+" "+subject+" "+verb+" "+remaining)
-				Q1 = refine(Q1)
-				questions_wh.append(Q1)
+					#Modify the verb
+					verb = mv.lemma_
+					Q1 = str(wh1+" "+aux+" "+subject+" "+verb+" "+remaining)
+					Q1 = refine(Q1)
+					questions_wh.append(Q1)
+
+		except Exception:
+			pass		
 
 
 
@@ -243,6 +250,51 @@ def yesno_questions(doc):
 				Q = str(aux+" "+subj+" "+verb+" "+remaining+"?")
 				Q = refine(Q)
 				questions_yn.append(Q)
+
+
+"""
+Function to convert yes questions to no 
+questions by fudging dates/numbers
+(with a 50% prob of converting) - TBD
+"""
+def fudge_questions(questions):
+
+	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+	new_qs = []
+	for quest in questions:
+		n = quest
+		try:
+			n = unicode(quest, encoding = 'ascii', errors = 'ignore')
+		except Exception:
+			pass
+		doc = nlp(n)
+		for q in doc.sents:
+			for word in q:
+				if word.ent_type_ == "DATE":
+					if str(word) in months:
+						pos = word.i
+						ind = months.index(str(word))
+						new_ind = ind + 3
+						if new_ind > 11:
+							new_ind = new_ind % 11
+						new_month = months[new_ind]
+						quest = quest.replace(str(word),new_month)
+
+		new_qs.append(quest)				
+
+	questions_yn = []
+	questions_yn = copy.deepcopy(new_qs)
+	return new_qs
+	
+
+
+						
+
+
+
+
+
+
 """
 Function that determines if a question needs to be removed
 Current criteria for removing are:
@@ -251,18 +303,6 @@ Current criteria for removing are:
 """
 def remove(question):
 	pronouns = ['he','him','his','she','her','hers','they','them','theirs','it','its']
-	#doc = nlp(unicode(question, encoding = 'ascii', errors = 'ignore'))
-	# for q in doc.sents:
-	# 	if q.root is not None:
-	# 		mv = q.root
-	# 	else:
-	# 		print "this shouldn't even happen"
-	# 		return 0
-
-	# 	for child in mv.children:
-	# 		if child.dep_ == "nsubj" or child.dep_ == "nsubjpass":
-	# 			if child in pronouns:
-	# 				return 0
 
 	for word in question.split():
 		if word in pronouns:
@@ -438,7 +478,15 @@ Questions that need to be REMOVED are given a score of 0
 Default score is 5
 """
 def score(question,id):
+
+	#Check qn length and presence of pronouns
 	if remove(question) == 1:
+		return 0
+
+	#Check grammatical correctness of question
+	tool = language_check.LanguageTool('en-US')
+        matches = tool.check(question)
+        if len(matches)>2:
 		return 0
 
 	if id == 3:
@@ -449,6 +497,8 @@ def score(question,id):
 
 	if "when" in question.split():
 		return 4
+
+	
 
 	return 5
 
@@ -497,6 +547,7 @@ def test():
 			print q,":",final_questions[q]
 
 def main():
+	global questions_yn
 	_,doc = read_doc(sys.argv[1])
 	doc = preprocess(doc, nlp)
 	num_questions = int(sys.argv[2])
@@ -504,21 +555,25 @@ def main():
 	try:
 		get_superlatives()
 		yesno_questions(doc)
+		questions_yn = fudge_questions(questions_yn)
 		evaluate_questions(questions_yn,1)
 		wh_questions(doc)
 		evaluate_questions(questions_wh,0)
 		subj_verb_obj_questions(doc)
 		evaluate_questions(questions_subj_verb_obj,3)
 	except Exception,e:
-		print e
+		print(traceback.format_exc())
 
 	final_questions = replace_superlatives()
+
+
+	
 	final_q = [x for x in final_questions.keys() if final_questions[x] != 0]
 
 	for i in range(num_questions):
 		if (i >= len(final_q)):
 			break
-		print final_q[i]
+		print final_q[i]	
 
 
 main()
