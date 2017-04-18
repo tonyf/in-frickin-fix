@@ -1,3 +1,4 @@
+import sys
 import os.path
 import cPickle
 
@@ -7,7 +8,8 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
-DATA_DIR = 'data/'
+
+DATA_DIR = 'data/train'
 MODEL_PATH = 'question_answering/document_classifier/doc_classifier.pkl'
 
 class DocClassifier:
@@ -45,3 +47,9 @@ def get_model():
         model = train_model()
         save_model(model)
     return model
+
+def setup():
+    train_model()
+
+if __name__ == '__main__':
+    setup()

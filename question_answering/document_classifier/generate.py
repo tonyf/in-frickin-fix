@@ -33,8 +33,8 @@ def write_doc_file(title, output_folder):
 
 def main():
     input_file = sys.argv[1]
-    article_class = input_file.split('.')[0]
-    output_folder = 'data/train' + article_class + '/'
+    article_class = input_file.split('/')[1].split('.')[0]
+    output_folder = 'data/train/' + article_class + '/'
     titles = get_titles(input_file)
     for title in titles:
         write_doc_file(title, output_folder)
