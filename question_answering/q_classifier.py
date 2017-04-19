@@ -34,18 +34,46 @@ class QType:
 # ORDINAL	   "first", "second", etc.
 # CARDINAL	   Numerals that do not fall under another type.
 
-def has_type(sentence, qtype):
+def has_type(sent, qtype):
     # Unhandled types
-    if qtype != QType.WHO or qtype != QType.WHEN or qtype != Qtype.COUNT:
+    if qtype not in [QType.WHO, QType.WHEN, QType.COUNT]:
         return True
-    for i in range(len(sentence)):
-        if qtype == QType.WHO and s[i].ent_type_ == "PERSON":
+    for i in range(len(sent)):
+        if qtype == QType.WHO and sent[i].ent_type_ == "PERSON":
             return True
-        elif qtype == QType.WHEN and s[i].ent_type_ == "DATE":
+        elif qtype == QType.WHEN and sent[i].ent_type_ == "DATE":
             return True
-        elif qtype == QType.COUNT and s[i].ent_type_ == "QUANTITY":
+        elif qtype == QType.COUNT and sent[i].ent_type_ == "QUANTITY":
             return True
     return False
+
+def get_template(sent, qtype):
+    if not has_type(sent, qtype):
+        return None
+    
+    ent_idx = None
+    mv_idx = None
+    template = None
+    for i in range(len(sent)):
+        # set the template
+        if qtype == QType.WHO and sent[i].ent_type_ == "PERSON":
+            template = "{0} is the person who {1}"
+            ent_idx = i
+        elif qtype == QType.WHEN and sent[i].ent_type_ == "DATE":
+            template = None
+        elif qtype == QType.COUNT and sent[i].ent_type_ == "QUANTITY":
+            template = None
+        
+        # find the main verb
+        if sent[i].text == sent.root.text:
+            mv_idx = i
+    
+    # return the whole sentence if we fail to find the needed info.
+    if ent_idx is None or mv_idx is None or template is None:
+        return sent.text
+    
+    answer = template.format(sent[ent_idx], sent[mv_idx:])    
+    return answer
 
 def qclassify(question):
     qtext = question.text
