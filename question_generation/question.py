@@ -593,7 +593,6 @@ def main():
 	
 	final_q = [x for x in final_questions.keys() if final_questions[x] != 0]
 
-	print "\n\n\n\n"
 	for i in range(num_questions):
 		if (i >= len(final_q)):
 			break

@@ -1,0 +1,5 @@
+#!/bin/bash
+DIR=$1/*.txt
+for filename in $DIR; do
+	./test "$filename" 10
+done
