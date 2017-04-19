@@ -117,8 +117,9 @@ def get_template(sent, quest, qtype):
     for i in range(len(sent)):
         # set the template
         if qtype == QType.WHO and sent[i].ent_type_ == "PERSON":
-            template = "{0} is the person who {1}"
-            ent_idx = i
+            #template = "{0} is the person who {1}"
+            #ent_idx = i
+            template = None
         elif qtype == QType.WHEN and sent[i].ent_type_ == "DATE":
             template = None
         elif qtype == QType.COUNT and sent[i].ent_type_ == "QUANTITY":
@@ -130,8 +131,7 @@ def get_template(sent, quest, qtype):
     
     # Return the whole sentence if we fail to find the needed info.
     if ent_idx is None or mv_idx is None or template is None:
-        text = [x.text.strip() for x in sent]
-        return ' '.join(text)
+        return sent.text
     
     answer = template.format(sent[ent_idx], sent[mv_idx:])    
     return answer
