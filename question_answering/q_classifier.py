@@ -1,5 +1,7 @@
 import re
 import spacy
+from nltk.corpus import wordnet as wn
+from test.test_smtplib import sim_auth
 
 # An enumeration for types of questions
 class QType:
@@ -47,10 +49,68 @@ def has_type(sent, qtype):
             return True
     return False
 
-def get_template(sent, qtype):
+def evaluate_yn(sent, q, qtype):
+    if qtype != QType.YESNO:
+        return None
+    
+    # Determine if both sentences 
+    quest = q.sents.next()
+    qmv = quest.root
+    quest_neg = False
+    for child in qmv.children:
+        if child.dep_ == "neg":
+            quest_neg = True
+    smv = sent.root
+    sent_neg = False
+    for child in smv.children:
+        if child.dep_ == "neg":
+            sent_neg = True
+    negated = True if quest_neg != sent_neg else False
+    
+    # Find the key word in the question and the answering sentence
+    ur_word_s = None
+    ur_word_q = None
+    max_sim = 0.0
+    for i in range(len(sent)):
+        for j in range(len(quest)):
+            sim = sent[i].similarity(quest[j])
+            if sim > max_sim:
+                max_sim = sim
+                ur_word_s = sent[i]
+                ur_word_q = quest[j]
+    
+    # Evaluate similarity of key words
+    '''
+    q_sets = wn.synsets(ur_word_q.lemma_)
+    s_sets = wn.synsets(ur_word_s.lemma_)
+    for qs in q_sets:
+        for ss in s_sets:
+            if qs.pos() == ss.pos():
+                pass
+    '''  
+    comparison = True if ur_word_s.lemma_ == ur_word_q.lemma_ else False
+    
+    if comparison != negated:
+        # Answer is True
+        return True
+    else:
+        # Answer is False
+        return False
+
+def get_template(sent, quest, qtype):
     if not has_type(sent, qtype):
         return None
     
+    # Evaluate YESNO questions
+    if qtype == QType.YESNO:
+        ans_val = evaluate_yn(sent, quest, qtype)
+        ans = "Yes" if ans_val else "No"
+        s = sent.text
+        s = s[0].lower() + s[1:] if sent[0].ent_type_ == "" else s
+        template = "{0}, {1}".format(ans, s)
+        return template
+    
+    # Evaluate other supported question types
     ent_idx = None
     mv_idx = None
     template = None
@@ -68,9 +128,10 @@ def get_template(sent, qtype):
         if sent[i].text == sent.root.text:
             mv_idx = i
     
-    # return the whole sentence if we fail to find the needed info.
+    # Return the whole sentence if we fail to find the needed info.
     if ent_idx is None or mv_idx is None or template is None:
-        return sent.text
+        text = [x.text.strip() for x in sent]
+        return ' '.join(text)
     
     answer = template.format(sent[ent_idx], sent[mv_idx:])    
     return answer
@@ -84,6 +145,10 @@ def qclassify(question):
     # Check for leading auxiliary verb => YESNO
     sent = question.sents.next()
     mv = sent.root
+    if mv.lemma_ == "be" and mv.idx == 0:
+        # if the main verb is a form of "to be" and is at the start
+        return QType.YESNO
+        
     for child in mv.children:
         if child.dep_ == "aux" and child.idx == 0:
             # if an auxiliary verb is at the start of the sentence

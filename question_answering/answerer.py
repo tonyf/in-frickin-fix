@@ -25,15 +25,14 @@ class Answerer(object):
                 smallest = s
                 s_dist = dist
                 s_index = i
-        step = int(math.floor(float(window) / 2))
-        start = s_index-step if s_index-step > 0 else 0
-        stop = s_index+step+1 if s_index+step < len(self.matrix) else len(self.matrix)
-        templated_answer = qc.get_template(smallest.sp_sent, qtype)
-        #TODO: templated answer is not used yet
-        return self.matrix[start:stop]
+        #step = int(math.floor(float(window) / 2))
+        #start = s_index-step if s_index-step > 0 else 0
+        #stop = s_index+step+1 if s_index+step < len(self.matrix) else len(self.matrix)
+        templated_answer = qc.get_template(smallest.sp_sent, q, qtype)
+        return templated_answer
+        #return self.matrix[start:stop]
 
     def get_answer(self, question, window):
         q = self.nlp(question)
         answer = self.find_answer_sentence(q, window)
-        text = [x.text.strip() for x in answer]
-        return ' '.join(text)
+        return answer
