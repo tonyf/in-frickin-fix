@@ -1,15 +1,13 @@
 import spacy
 import os
 import sys
-import spacy
 import re
 import traceback
 import random
-import language_check
+# import language_check
 import copy
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from lib.preprocess import *
-
-
 
 root_dir = "data/"
 questions_yn = []
@@ -17,6 +15,8 @@ questions_wh = []
 questions_subj_verb_obj = []
 set_list = ["test_set","set1","set2","set3","set4"]
 nlp = spacy.load("en")
+testing = False
+question_answers = {}
 
 
 #Dict of final questions and their scores
@@ -30,13 +30,17 @@ def preprocess_question(setlist, nlp):
 #Removes all excess whitespace in the sentence passed to it
 def refine(q):
 	q_ = re.sub(' +',' ',q)
-	return q_
+	q1 = q_.replace(" 's ","'s ")
+	q2 = q1.replace(" , ",", ")
+	q3 = q2.replace(".?","?")
+	q4 = q3.replace(" ?","?")
+	return q4
 
-def get_prep_phrase(node, word_list, sent):
+def get_subphrase(node, word_list, sent):
 	begin = sent[0].i
 	word_list.append(node)
 	for child in node.children:
-		get_prep_phrase(child,word_list,sent)
+		get_subphrase(child,word_list,sent)
 	min_pos = float('inf')
 	max_pos = -float('inf')
 	for word in word_list:
@@ -69,8 +73,8 @@ def wh_questions(doc):
 			for child in mv.children:
 				if child.dep_ == "nsubj":
 					subj_list = []
-					concat_subphrase(child,subj_list)
-					subj_list.reverse()
+					subj_list = get_subphrase(child,subj_list,s)
+					# subj_list.reverse()
 					for node in subj_list:
 						if node.ent_type_ == "PERSON":
 							wh = "Who"
@@ -81,8 +85,8 @@ def wh_questions(doc):
 
 				elif child.dep_ == "nsubjpass":
 					subj_list = []
-					concat_subphrase(child,subj_list)
-					subj_list.reverse()
+					subj_list = get_subphrase(child,subj_list,s)
+					# subj_list.reverse()
 					for node in subj_list:
 						if node.ent_type_ == "PERSON":
 							wh = "Who"
@@ -96,7 +100,7 @@ def wh_questions(doc):
 
 				if child.dep_ == "prep":
 					subj_list_prep = []
-					concat_subphrase(child,subj_list_prep)
+					subj_list = get_subphrase(child,subj_list_prep,s)
 					for node in subj_list_prep:
 						if node.ent_type_ == "DATE":
 							wh1 = "When"
@@ -114,16 +118,22 @@ def wh_questions(doc):
 					rem2 += word.string
 
 			Q = wh+rem2
-			Q = Q.replace(".","?")
+			if Q.strip().endswith('.'):
+				Q = Q[:-1]
+				Q+="?"
 			Q = refine(Q)
+
 			questions_wh.append(Q)
+			question_answers[Q] = s
 
 			#wh1 - When questions
 			list_of_rem = rem2.strip().split(' ',1)
 			if wh1 is not None and len(list_of_rem)>1:
 				rem_when = " "
 				remaining = rem2.strip().split(' ', 1)[1]
-				remaining = remaining.replace(".","?")
+				if remaining.strip().endswith('.'):
+					remaining = remaining[:-1]
+					remaining+="?"
 
 				subject = ""
 				for s1 in subj_list:
@@ -135,6 +145,7 @@ def wh_questions(doc):
 					Q1 = str(wh1+" "+aux+" "+subject+" "+remaining)
 					Q1 = refine(Q1)
 					questions_wh.append(Q1)
+					question_answers[Q1] = s
 
 				#Questions of type "On 25th Nov, SUBJ played blah blah blah" -> "When did SUBJ play blah..?"
 				else:
@@ -154,6 +165,7 @@ def wh_questions(doc):
 					Q1 = str(wh1+" "+aux+" "+subject+" "+verb+" "+remaining)
 					Q1 = refine(Q1)
 					questions_wh.append(Q1)
+					question_answers[Q1] = s
 
 		except Exception:
 			pass		
@@ -179,7 +191,7 @@ def yesno_questions(doc):
 					number = "plural"
 
 				subj_list = []
-				concat_subphrase(child,subj_list)
+				subj_list = get_subphrase(child,subj_list,s)
 				#Go through every word in sub phrase and remove caps if not a named entity
 				new_subj_list = []
 				for node in subj_list:
@@ -189,7 +201,7 @@ def yesno_questions(doc):
 						sub_word = str(node.string.lower())
 					new_subj_list.append(sub_word)
 
-				new_subj_list.reverse()
+				# new_subj_list.reverse()
 				subj = " ".join(new_subj_list)
 
 			elif child.dep_ == "neg":
@@ -218,6 +230,7 @@ def yesno_questions(doc):
 			Q = str(aux+" "+subj+" "+mv.string+" "+remaining+"?")
 			Q = refine(Q)
 			questions_yn.append(Q)
+			question_answers[Q] = s
 
 		else:
 			tense = None
@@ -243,6 +256,7 @@ def yesno_questions(doc):
 				Q = str(verb+" "+subj+" "+remaining+"?")
 				Q = refine(Q)
 				questions_yn.append(Q)
+				question_answers[Q] = s
 			#Modify the verb
 			else:
 				verb = mv.lemma_
@@ -250,6 +264,7 @@ def yesno_questions(doc):
 				Q = str(aux+" "+subj+" "+verb+" "+remaining+"?")
 				Q = refine(Q)
 				questions_yn.append(Q)
+				question_answers[Q] = s
 
 
 """
@@ -262,6 +277,7 @@ def fudge_questions(questions):
 	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 	new_qs = []
 	for quest in questions:
+		old_q = quest
 		n = quest
 		try:
 			n = unicode(quest, encoding = 'ascii', errors = 'ignore')
@@ -280,19 +296,14 @@ def fudge_questions(questions):
 						new_month = months[new_ind]
 						quest = quest.replace(str(word),new_month)
 
-		new_qs.append(quest)				
+		new_qs.append(quest)
+		s = question_answers[old_q]
+		del question_answers[old_q]
+		question_answers[quest] = s
 
 	questions_yn = []
 	questions_yn = copy.deepcopy(new_qs)
 	return new_qs
-	
-
-
-						
-
-
-
-
 
 
 """
@@ -302,10 +313,10 @@ Current criteria for removing are:
 2. If the subject is: "he/she/him/her/it/its/it's/"
 """
 def remove(question):
-	pronouns = ['he','him','his','she','her','hers','they','them','theirs','it','its']
+	pronouns = ['he','him','his','she','her','hers','they','them','these','this','theirs','it','its']
 
 	for word in question.split():
-		if word in pronouns:
+		if word.lower() in pronouns:
 			return 1
 
 	if len(question.split()) < 5 or len(question.split()) >= 20:
@@ -322,7 +333,7 @@ def subj_verb_obj_questions(doc):
 		if mv.pos_!="VERB":
 			continue
 
-		aux = neg = subj = obj = iobj = number = prep = None
+		aux = neg = subj = obj = iobj = pobj = number = prep = None
 
 		for child in mv.children:
 
@@ -333,7 +344,7 @@ def subj_verb_obj_questions(doc):
 					number = "plural"
 
 				subj_list = []
-				concat_subphrase(child,subj_list)
+				subj_list = get_subphrase(child,subj_list,s)
 				#Go through every word in sub phrase and remove caps if not a named entity
 				new_subj_list = []
 				for node in subj_list:
@@ -343,27 +354,28 @@ def subj_verb_obj_questions(doc):
 						sub_word = str(node.string.lower())
 					new_subj_list.append(sub_word)
 
-				new_subj_list.reverse()
+				# new_subj_list.reverse()
 				subj = " ".join(new_subj_list)
 
 			elif child.dep_ == "dobj":
-				dobj = child.string
-				obj_list = []
-				concat_subphrase(child,obj_list)
-				new_obj_list = []
-				for node in obj_list:
-					if node.ent_type_:
-						obj_word = str(node.string.capitalize())
-					else:
-						obj_word = str(node.string.lower())
-					new_obj_list.append(obj_word)
-				new_obj_list.reverse()
-				obj = " ".join(new_obj_list)
+				if child.tag_ == "NNP" or child.tag_ == "NN" or child.tag_ == "NNPS" or child.tag_ == "NNS":
+					dobj = child.string
+					obj_list = []
+					obj_list = get_subphrase(child,obj_list,s)
+					new_obj_list = []
+					for node in obj_list:
+						if node.ent_type_:
+							obj_word = str(node.string.capitalize())
+						else:
+							obj_word = str(node.string.lower())
+						new_obj_list.append(obj_word)
+					# new_obj_list.reverse()
+					obj = " ".join(new_obj_list)
 
 			elif child.dep_ == "prep":
 				prep = child.string
 				prep_list = []
-				prep_list = get_prep_phrase(child,prep_list,s)
+				prep_list = get_subphrase(child,prep_list,s)
 				new_prep_list = []
 				for node in prep_list:
 					if node.ent_type_:
@@ -383,10 +395,11 @@ def subj_verb_obj_questions(doc):
 			elif child.dep_ == 'iobj' or child.dep_ == 'dative':
 				iobj = "exists"
 
-		if subj is None or obj is None or not (iobj is None):
-			continue
+			elif child.dep_ == 'pobj':
+				pobj = "exists"
 
-		# TODO: need rest??
+		if subj is None or obj is None or not (iobj is None) or not (pobj is None):
+			continue
 
 		if aux:
 			#aux = aux.capitalize()
@@ -396,7 +409,7 @@ def subj_verb_obj_questions(doc):
 				Q = str("What "+aux+" "+subj+" "+mv.string+" "+prep+"?")
 			Q = refine(Q)
 			questions_subj_verb_obj.append(Q)
-			# print "\t", Q
+			question_answers[Q] = s
 
 		else:
 			tense = None
@@ -426,7 +439,7 @@ def subj_verb_obj_questions(doc):
 
 				Q = refine(Q)
 				questions_subj_verb_obj.append(Q)
-				# print "\t", Q
+				question_answers[Q] = s
 			#Modify the verb
 			else:
 				verb = mv.lemma_
@@ -437,13 +450,14 @@ def subj_verb_obj_questions(doc):
 					Q = str("What "+aux+" "+subj+" "+verb+" "+prep+"?")
 				Q = refine(Q)
 				questions_subj_verb_obj.append(Q)
-				# print "\t", Q
+				question_answers[Q] = s
 
 
 def replace_superlatives():
 	sups_dict = get_superlatives()
 	new_questions = {}
 	for question, score in final_questions.iteritems():
+		old_q = question
 		sup = False
 		split_question = question.split()
 	# TODO: make better
@@ -453,7 +467,11 @@ def replace_superlatives():
 					sup = True
 					if random.random() > 0.5:
 						split_question[i] = sups_dict[word]
-		new_questions[(" ").join(split_question)] = score
+		new_q = (" ").join(split_question)
+		new_questions[new_q] = score
+		s = question_answers[old_q]
+		del question_answers[old_q]
+		question_answers[new_q] = s
 		# if sup:
 		# 	print (" ").join(split_question)
 	return new_questions
@@ -513,7 +531,6 @@ def evaluate_questions(qn_set,id):
 		final_questions[question] = sc
 
 
-
 def test():
 	setlist = ["set1"]
 	set_dict = preprocess_question(setlist,nlp)
@@ -550,10 +567,14 @@ def test():
 			print q,":",final_questions[q]
 
 def main():
+	global testing
 	global questions_yn
 	_,doc = read_doc(sys.argv[1])
 	doc = preprocess(doc, nlp)
 	num_questions = int(sys.argv[2])
+
+	if len(sys.argv) > 3:
+		testing = bool(sys.argv[3])
 
 	try:
 		get_superlatives()
@@ -569,14 +590,21 @@ def main():
 
 	final_questions = replace_superlatives()
 
-
 	
 	final_q = [x for x in final_questions.keys() if final_questions[x] != 0]
 
+	print "\n\n\n\n"
 	for i in range(num_questions):
 		if (i >= len(final_q)):
 			break
-		print final_q[i]	
+		print final_q[i]
+
+	if testing:
+		f = open("lib/questions_answers.txt", "w")
+		for i in range(num_questions):
+			if (i >= len(final_q)):
+				break
+			f.write(final_q[i] + "\n" + str(question_answers[final_q[i]]) + "\n")
 
 
 main()
