@@ -32,7 +32,9 @@ def refine(q):
 	q_ = re.sub(' +',' ',q)
 	q1 = q_.replace(" 's ","'s ")
 	q2 = q1.replace(" , ",", ")
-	return q2
+	q3 = q2.replace(".?","?")
+	q4 = q3.replace(" ?","?")
+	return q4
 
 def get_subphrase(node, word_list, sent):
 	begin = sent[0].i
@@ -116,8 +118,11 @@ def wh_questions(doc):
 					rem2 += word.string
 
 			Q = wh+rem2
-			Q = Q.replace(".","?")
+			if Q.strip().endswith('.'):
+				Q = Q[:-1]
+				Q+="?"
 			Q = refine(Q)
+
 			questions_wh.append(Q)
 			question_answers[Q] = s
 
@@ -126,7 +131,9 @@ def wh_questions(doc):
 			if wh1 is not None and len(list_of_rem)>1:
 				rem_when = " "
 				remaining = rem2.strip().split(' ', 1)[1]
-				remaining = remaining.replace(".","?")
+				if remaining.strip().endswith('.'):
+					remaining = remaining[:-1]
+					remaining+="?"
 
 				subject = ""
 				for s1 in subj_list:
@@ -306,10 +313,10 @@ Current criteria for removing are:
 2. If the subject is: "he/she/him/her/it/its/it's/"
 """
 def remove(question):
-	pronouns = ['he','him','his','she','her','hers','they','them','theirs','it','its']
+	pronouns = ['he','him','his','she','her','hers','they','them','these','this','theirs','it','its']
 
 	for word in question.split():
-		if word in pronouns:
+		if word.lower() in pronouns:
 			return 1
 
 	if len(question.split()) < 5 or len(question.split()) >= 20:
@@ -582,10 +589,10 @@ def main():
 
 	final_questions = replace_superlatives()
 
-
 	
 	final_q = [x for x in final_questions.keys() if final_questions[x] != 0]
 
+	print "\n\n\n\n"
 	for i in range(num_questions):
 		if (i >= len(final_q)):
 			break
@@ -597,5 +604,6 @@ def main():
 			if (i >= len(final_q)):
 				break
 			f.write(final_q[i] + "\n" + str(question_answers[final_q[i]]) + "\n")
+	
 
 main()
