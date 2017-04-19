@@ -5,7 +5,7 @@ import numpy as np
 
 TOPIC_SIZE = 200
 EMBEDDING_SIZE = 300
-Sentence = namedtuple('Sentence', 'text matrix')
+Sentence = namedtuple('Sentence', 'text sp_sent matrix')
 
 def get_doc_title(doc):
     # TODO: reliably parse title from document
@@ -14,7 +14,7 @@ def get_doc_title(doc):
 def get_doc_matrix(doc):
     sentences = []
     for sent in doc.sents:
-        s = Sentence(text=sent.text, matrix=get_sentence_matrix(sent))
+        s = Sentence(text=sent.text, sp_sent=sent, matrix=get_sentence_matrix(sent))
         sentences.append(s)
     return sentences
 
