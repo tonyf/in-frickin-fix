@@ -11,12 +11,13 @@ class Answerer(object):
         self.doc = doc
         self.matrix = get_doc_matrix(doc)
 
-    def find_answer_sentence(self, q, window):
+    def find_answer_sentence(self, question, window):
         smallest = self.matrix[0]
+        q = get_sentence_matrix(question)
         s_dist = compute_dist(self.matrix[0].matrix, q)
         s_index = 0
-        qtype = qclassify(q)
-        
+        qtype = qclassify(question)
+
         for i in range(len(self.matrix)):
             s = self.matrix[i]
             dist = compute_dist(s.matrix, q)
@@ -31,7 +32,6 @@ class Answerer(object):
 
     def get_answer(self, question, window):
         q = self.nlp(question)
-        m = get_sentence_matrix(q)
-        answer = self.find_answer_sentence(m, window)
+        answer = self.find_answer_sentence(q, window)
         text = [x.text.strip() for x in answer]
         return ' '.join(text)
