@@ -11,12 +11,12 @@ class Answerer(object):
         self.doc = doc
         self.matrix = get_doc_matrix(doc)
 
-    def find_answer_sentence(self, q, window):
+    def find_answer_sentence(self, q, qtype, window):
         m = get_sentence_matrix(q)
         smallest = self.matrix[0]
         s_dist = compute_dist(self.matrix[0].matrix, m)
         s_index = 0
-        qtype = qc.qclassify(q)
+
 
         for i in range(len(self.matrix)):
             s = self.matrix[i]
@@ -28,11 +28,15 @@ class Answerer(object):
         #step = int(math.floor(float(window) / 2))
         #start = s_index-step if s_index-step > 0 else 0
         #stop = s_index+step+1 if s_index+step < len(self.matrix) else len(self.matrix)
-        templated_answer = qc.get_template(smallest.sp_sent, q, qtype)
-        return templated_answer
+
+        return smallest.sp_sent
         #return self.matrix[start:stop]
 
-    def get_answer(self, question, window):
+    def get_answer(self, question, window, format_answer):
         q = self.nlp(question)
-        answer = self.find_answer_sentence(q, window)
+        qtype = qc.qclassify(q)
+        answer = self.find_answer_sentence(q, qtype, window)
+        templated_answer = qc.get_template(answer, q, qtype)
+        if format_answer and templated_answer is not None:
+            return templated_answer
         return answer

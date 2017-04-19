@@ -42,7 +42,7 @@ def test():
             print "Q: {0} | A: {1}".format(question, answer)
 
 
-def answer_questions(doc_text, questions):
+def answer_questions(doc_text, questions, format_answer):
     nlp = spacy.load("en")
     doc = preprocess(doc_text, nlp)
     A = Answerer(doc, nlp)
@@ -50,13 +50,16 @@ def answer_questions(doc_text, questions):
         if len(q) == 0:
             print " "
         else:
-            answer = A.get_answer(q, 0)
+            answer = A.get_answer(q, 0, format_answer)
             print answer
 
 def main():
     _, doc_text = read_doc(sys.argv[1])
     questions = read_questions(sys.argv[2])
-    answer_questions(doc_text, questions)
+    format_answer = True
+    if len(sys.argv) > 3:
+        format_answer = not bool(sys.argv[3])
+    answer_questions(doc_text, questions, format_answer)
 
 
 if __name__ == '__main__':
