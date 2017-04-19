@@ -1,12 +1,13 @@
 def main():
 	expected_actual = {}
+	expected_question = {}
 	
 	f_expected = open("lib/questions_answers.txt", "r")
 	f_actual = open("lib/answers.txt", "r")
 
 	l_actual = f_actual.readline()
-	l_expected = f_expected.readline()
-	if l_expected == "":
+	question = f_expected.readline()
+	if question == "":
 		print "Failed: Answer Key incorrectly formatted"
 		return
 	l_expected = f_expected.readline()
@@ -21,18 +22,19 @@ def main():
 			count_correct += 1
 		else:
 			expected_actual[l_expected] = l_actual
+			expected_question[l_expected] = question
 
 		l_actual = f_actual.readline()
 		if l_actual == "":
 			break
-		l_expected = f_expected.readline()
-		if l_expected == "":
+		question = f_expected.readline()
+		if question == "":
 			print "Failed: Answer Key incorrectly formatted"
 			break
 		l_expected = f_expected.readline()
 
 	print count_correct, " out of ", count_total, " correct."
 	for expected, actual in expected_actual.iteritems():
-		print "Expected: ", expected, "Actual: ", actual		
+		print "Question: ", expected_question[expected], "Expected: ", expected, "Actual: ", actual		
 
 main()

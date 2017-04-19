@@ -567,6 +567,7 @@ def test():
 			print q,":",final_questions[q]
 
 def main():
+	global testing
 	global questions_yn
 	_,doc = read_doc(sys.argv[1])
 	doc = preprocess(doc, nlp)
@@ -604,6 +605,6 @@ def main():
 			if (i >= len(final_q)):
 				break
 			f.write(final_q[i] + "\n" + str(question_answers[final_q[i]]) + "\n")
-	
+
 
 main()
