@@ -1,0 +1,6 @@
+#!/bin/bash
+DOCUMENT=$1
+NUM_QUESTIONS=$2
+python2 -m question_generation.question $DOCUMENT $NUM_QUESTIONS True > lib/questions.txt
+python2 -m question_answering.answer $DOCUMENT lib/questions.txt > lib/answers.txt
+python2 -m lib.check_answers

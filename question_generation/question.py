@@ -4,7 +4,7 @@ import sys
 import re
 import traceback
 import random
-import language_check
+# import language_check
 import copy
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from lib.preprocess import *
@@ -15,6 +15,8 @@ questions_wh = []
 questions_subj_verb_obj = []
 set_list = ["test_set","set1","set2","set3","set4"]
 nlp = spacy.load("en")
+testing = False
+question_answers = {}
 
 
 #Dict of final questions and their scores
@@ -115,6 +117,7 @@ def wh_questions(doc):
 			Q = Q.replace(".","?")
 			Q = refine(Q)
 			questions_wh.append(Q)
+			question_answers[Q] = s
 
 			#wh1 - When questions
 			list_of_rem = rem2.strip().split(' ',1)
@@ -133,6 +136,7 @@ def wh_questions(doc):
 					Q1 = str(wh1+" "+aux+" "+subject+" "+remaining)
 					Q1 = refine(Q1)
 					questions_wh.append(Q1)
+					question_answers[Q1] = s
 
 				#Questions of type "On 25th Nov, SUBJ played blah blah blah" -> "When did SUBJ play blah..?"
 				else:
@@ -152,6 +156,7 @@ def wh_questions(doc):
 					Q1 = str(wh1+" "+aux+" "+subject+" "+verb+" "+remaining)
 					Q1 = refine(Q1)
 					questions_wh.append(Q1)
+					question_answers[Q1] = s
 
 		except Exception:
 			pass		
@@ -216,6 +221,7 @@ def yesno_questions(doc):
 			Q = str(aux+" "+subj+" "+mv.string+" "+remaining+"?")
 			Q = refine(Q)
 			questions_yn.append(Q)
+			question_answers[Q] = s
 
 		else:
 			tense = None
@@ -241,6 +247,7 @@ def yesno_questions(doc):
 				Q = str(verb+" "+subj+" "+remaining+"?")
 				Q = refine(Q)
 				questions_yn.append(Q)
+				question_answers[Q] = s
 			#Modify the verb
 			else:
 				verb = mv.lemma_
@@ -248,6 +255,7 @@ def yesno_questions(doc):
 				Q = str(aux+" "+subj+" "+verb+" "+remaining+"?")
 				Q = refine(Q)
 				questions_yn.append(Q)
+				question_answers[Q] = s
 
 
 """
@@ -260,6 +268,7 @@ def fudge_questions(questions):
 	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 	new_qs = []
 	for quest in questions:
+		old_q = quest
 		n = quest
 		try:
 			n = unicode(quest, encoding = 'ascii', errors = 'ignore')
@@ -278,19 +287,14 @@ def fudge_questions(questions):
 						new_month = months[new_ind]
 						quest = quest.replace(str(word),new_month)
 
-		new_qs.append(quest)				
+		new_qs.append(quest)
+		s = question_answers[old_q]
+		del question_answers[old_q]
+		question_answers[quest] = s
 
 	questions_yn = []
 	questions_yn = copy.deepcopy(new_qs)
 	return new_qs
-	
-
-
-						
-
-
-
-
 
 
 """
@@ -396,6 +400,7 @@ def subj_verb_obj_questions(doc):
 				Q = str("What "+aux+" "+subj+" "+mv.string+" "+prep+"?")
 			Q = refine(Q)
 			questions_subj_verb_obj.append(Q)
+			question_answers[Q] = s
 			# print "-----------"
 			# print s
 			# print "\t", Q
@@ -428,6 +433,7 @@ def subj_verb_obj_questions(doc):
 
 				Q = refine(Q)
 				questions_subj_verb_obj.append(Q)
+				question_answers[Q] = s
 				# print "-----------"
 				# print s
 				# print "\t", Q
@@ -441,6 +447,7 @@ def subj_verb_obj_questions(doc):
 					Q = str("What "+aux+" "+subj+" "+verb+" "+prep+"?")
 				Q = refine(Q)
 				questions_subj_verb_obj.append(Q)
+				question_answers[Q] = s
 				# print "-----------"
 				# print s
 				# print "\t", Q
@@ -450,6 +457,7 @@ def replace_superlatives():
 	sups_dict = get_superlatives()
 	new_questions = {}
 	for question, score in final_questions.iteritems():
+		old_q = question
 		sup = False
 		split_question = question.split()
 	# TODO: make better
@@ -459,7 +467,11 @@ def replace_superlatives():
 					sup = True
 					if random.random() > 0.5:
 						split_question[i] = sups_dict[word]
-		new_questions[(" ").join(split_question)] = score
+		new_q = (" ").join(split_question)
+		new_questions[new_q] = score
+		s = question_answers[old_q]
+		del question_answers[old_q]
+		question_answers[new_q] = s
 		# if sup:
 		# 	print (" ").join(split_question)
 	return new_questions
@@ -519,7 +531,6 @@ def evaluate_questions(qn_set,id):
 		final_questions[question] = sc
 
 
-
 def test():
 	setlist = ["set1"]
 	set_dict = preprocess_question(setlist,nlp)
@@ -561,6 +572,9 @@ def main():
 	doc = preprocess(doc, nlp)
 	num_questions = int(sys.argv[2])
 
+	if len(sys.argv) > 3:
+		testing = bool(sys.argv[3])
+
 	try:
 		get_superlatives()
 		yesno_questions(doc)
@@ -582,7 +596,13 @@ def main():
 	for i in range(num_questions):
 		if (i >= len(final_q)):
 			break
-		print final_q[i]	
+		print final_q[i]
 
+	if testing:
+		f = open("lib/questions_answers.txt", "w")
+		for i in range(num_questions):
+			if (i >= len(final_q)):
+				break
+			f.write(final_q[i] + "\n" + str(question_answers[final_q[i]]) + "\n")
 
 main()
