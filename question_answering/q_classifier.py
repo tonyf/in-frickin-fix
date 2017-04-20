@@ -1,7 +1,8 @@
 import re
 import spacy
-from nltk.corpus import wordnet as wn
-from test.test_smtplib import sim_auth
+from lib.antonyms import *
+import doc_utils as du
+
 
 # An enumeration for types of questions
 class QType:
@@ -17,24 +18,24 @@ class QType:
 
 # spaCy NERs:
 
-# PERSON	   People, including fictional.
-# NORP	       Nationalities or religious or political groups.
-# FACILITY	   Buildings, airports, highways, bridges, etc.
-# ORG	       Companies, agencies, institutions, etc.
-# GPE      	   Countries, cities, states.
-# LOC	       Non-GPE locations, mountain ranges, bodies of water.
-# PRODUCT	   Objects, vehicles, foods, etc. (Not services.)
-# EVENT	       Named hurricanes, battles, wars, sports events, etc.
+# PERSON       People, including fictional.
+# NORP         Nationalities or religious or political groups.
+# FACILITY     Buildings, airports, highways, bridges, etc.
+# ORG          Companies, agencies, institutions, etc.
+# GPE          Countries, cities, states.
+# LOC          Non-GPE locations, mountain ranges, bodies of water.
+# PRODUCT      Objects, vehicles, foods, etc. (Not services.)
+# EVENT        Named hurricanes, battles, wars, sports events, etc.
 # WORK_OF_ART  Titles of books, songs, etc.
-# LANGUAGE	   Any named language
+# LANGUAGE     Any named language
 
-# DATE	       Absolute or relative dates or periods.
-# TIME	       Times smaller than a day.
-# PERCENT	   Percentage, including "%".
-# MONEY	       Monetary values, including unit.
-# QUANTITY	   Measurements, as of weight or distance.
-# ORDINAL	   "first", "second", etc.
-# CARDINAL	   Numerals that do not fall under another type.
+# DATE         Absolute or relative dates or periods.
+# TIME         Times smaller than a day.
+# PERCENT      Percentage, including "%".
+# MONEY        Monetary values, including unit.
+# QUANTITY     Measurements, as of weight or distance.
+# ORDINAL      "first", "second", etc.
+# CARDINAL     Numerals that do not fall under another type.
 
 def has_type(sent, qtype):
     # Unhandled types
@@ -78,20 +79,43 @@ def evaluate_yn(sent, q, qtype):
     ur_word_q = [quest[sorted_pairs[0][1]], quest[sorted_pairs[1][1]]]
     
     # Evaluate similarity of key words
-    '''
-    q_sets = wn.synsets(ur_word_q.lemma_)
-    s_sets = wn.synsets(ur_word_s.lemma_)
-    for qs in q_sets:
-        for ss in s_sets:
-            if qs.pos() == ss.pos():
-                pass
-    '''
     comparison = True
     for i in range(len(ur_word_s)):
         if ur_word_s[i].lemma_ != ur_word_q[i].lemma_:
             comparison = False
+
+    # Check that quantitative Named Entities in the quest match the sent
+    sent_ents = du.get_ents_in_sent(sent)
+    sent_ents = [x.text for x in sent_ents]
+    named_entities_match = True
+    for qent in q.ents:
+        if qent.label_ in [u"DATE", u"TIME", u"PERCENT", u"MONEY",
+                u"QUANTITY", u"ORDINAL", u"CARDINAL"]:
+            if qent.text not in sent_ents:
+                named_entities_match = False
     
-    if comparison != negated:
+    # Check for reversed comparatives and superlatives
+    sups_dict = get_superlatives()
+    comps_dict = get_comparatives()
+    adjs_match = True
+    for i in range(len(sent)):
+        sword = sent[i].text.strip().lower()
+        is_sup = sword in sups_dict.keys()
+        is_cmp = sword in comps_dict.keys()
+        if not is_sup and not is_cmp:
+            continue
+        qwords = quest.text.lower().split()
+        if sword in qwords:
+            adjs_match = True
+            break
+        elif is_sup and sups_dict[sword] in qwords:
+            adjs_match = False
+            break
+        elif is_cmp and comps_dict[sword] in qwords:
+            adjs_match = False
+            break
+
+    if comparison != negated and adjs_match and named_entities_match:
         # Answer is True
         return True
     else:

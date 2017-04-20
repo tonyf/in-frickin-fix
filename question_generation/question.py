@@ -8,6 +8,7 @@ import random
 import copy
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from lib.preprocess import *
+from lib.antonyms import *
 
 root_dir = "data/"
 questions_yn = []
@@ -464,16 +465,6 @@ def replace_superlatives_comparatives():
 	return new_questions
 
 
-def get_superlatives():
-	f = open("lib/superlatives.txt", "r")
-	sups_dict = {}
-	line = f.readline()
-	while line != "":
-		sups = line.split(",")
-		sups_dict[sups[0]] = sups[1].strip()
-		line = f.readline()
-	return sups_dict
-
 """
 Function that determines if a question needs to be removed
 Current criteria for removing are:
@@ -538,16 +529,6 @@ def remove(question):
 		return 1
 
 	return 0
-
-def get_comparatives():
-	f = open("lib/comparatives.txt", "r")
-	comps_dict = {}
-	line = f.readline()
-	while line != "":
-		comps = line.split(",")
-		comps_dict[comps[0]] = comps[1].strip()
-		line = f.readline()
-	return comps_dict
 
 
 """
@@ -614,7 +595,6 @@ def test():
 	except Exception,e:
 		print e
 
-
 	final_questions = replace_superlatives_comparatives()
 
 	print "All questions & their scores:"
@@ -646,6 +626,7 @@ def main():
 	final_questions = replace_superlatives_comparatives()
 
 
+	final_q = []
 	count = 0
 	for key, value in sorted(final_questions.items(), key=lambda x: random.random()):
 		if value != 0:
@@ -653,10 +634,9 @@ def main():
 			if count > num_questions:
 				break
 			print key
-
-	#print "Total Count: ",count
-	
-	final_q = [x for x in final_questions.keys() if final_questions[x] != 0]
+			final_q.append(key)
+			if count == num_questions:
+				break
 
 	if testing:
 		f = open("lib/questions_answers.txt", "w")

@@ -15,6 +15,13 @@ L5_GRAM = 0.08
 L7_GRAM = 0.08
 LF_GRAM = 0.75
 
+def get_ents_in_sent(sent):
+    doc = sent.doc
+    start_idx = sent.start_char
+    end_idx = sent.end_char
+    ents = [x for x in doc.ents if x.start_char >= start_idx and x.end_char <= end_idx]
+    return ents
+
 def get_doc_title(doc):
     # TODO: reliably parse title from document
     return ""
