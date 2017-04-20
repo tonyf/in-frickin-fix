@@ -614,14 +614,6 @@ def test():
 	except Exception,e:
 		print e
 
-	# print "\nYes/No:"
-	# for q in questions_yn:
-	# 	print q
-	# print "\nWh Questions:"
-	# for q in questions_wh:
-	# 	print q
-	# for q in questions_subj_verb_obj:
-	# 	print q
 
 	final_questions = replace_superlatives_comparatives()
 
@@ -658,18 +650,13 @@ def main():
 	for key, value in sorted(final_questions.items(), key=lambda x: random.random()):
 		if value != 0:
 			count += 1
+			if count > num_questions:
+				break
 			print key
 
-	print "Total Count: ",count
+	#print "Total Count: ",count
 	
 	final_q = [x for x in final_questions.keys() if final_questions[x] != 0]
-
-	"""
-	for i in range(num_questions):
-		if (i >= len(final_q)):
-			break
-		print final_q[i]
-	"""
 
 	if testing:
 		f = open("lib/questions_answers.txt", "w")
