@@ -1,7 +1,9 @@
 from collections import defaultdict, namedtuple
 from document_classifier.classifier import *
+from operator import itemgetter
 import scipy.spatial as sp
 import numpy as np
+import math
 
 TOPIC_SIZE = 200
 EMBEDDING_SIZE = 300
@@ -41,41 +43,43 @@ def get_category_docs(doc_dict, categories):
         docs.extend(doc_dict[c])
     return docs
 
-def compute_dist(a, b):
-    return windowed_vector(a, b, 1)
+def get_norm(a):
+    a = a.sum(axis=0)
+    return np.count_nonzero(a)
 
-def windowed_vector(a, b, window):
+def compute_dist(a, b):
+    return 0.5 * sentence_distance(a, b) + 0.25 * windowed_distance(a, b, 3) + 0.25 * windowed_distance(a, b, 5)
+
+def windowed_distance(a, b, window, mode='min'):
     total = 0
     a_norm = 0
     b_norm = 0
 
-    a_sum = np.zeros(EMBEDDING_SIZE)
-    b_sum = np.zeros(EMBEDDING_SIZE)
+    a_sum = np.zeros((EMBEDDING_SIZE, window))
+    b_sum = np.zeros((EMBEDDING_SIZE, window))
 
+    sums = []
     for i in xrange(0, a.shape[1], window):
         for j in xrange(0, b.shape[1], window):
-            a_sum += a[:, i:i+window].sum(axis=1)
-            b_sum += b[:, j:j+window].sum(axis=1)
+            a_sum = a[:, i:i+window]
+            b_sum = b[:, j:j+window]
 
-            if a_sum.sum() != 0:
-                a_norm += 1
-            if b_sum.sum() != 0:
-                b_norm += 1
-    a_sum = a_sum / a_norm
-    b_sum = b_sum / b_norm
-    return sp.distance.cosine(a_sum.flatten(), b_sum.flatten())
+            a_norm = get_norm(a_sum)
+            b_norm = get_norm(b_sum)
 
-def get_vector(a, window):
+            if a_norm != 0 and b_norm != 0:
+                a_vector = a_sum.sum(axis=1).flatten() / a_norm
+                b_vector = b_sum.sum(axis=1).flatten() / b_norm
+                sums.append( (a_vector, b_vector) )
+
+    distances = [sp.distance.cosine(x[0], x[1]) for x in sums]
+    if mode == 'min':
+        return min(distances)
+    return sum(distances) / len(distances)
+
+
+def sentence_distance(a, b):
     total = 0
-    for i in xrange(0, a.shape[1]):
-        for j in range(b.shape[1]):
-            a_sum = a[:, i].sum() == 0
-            b_sum = b[:, j].sum() == 0
-
-            if a[:, i].sum() == 0:
-                total += np.linalg.norm(b[:,j])
-            elif b[:, j].sum() == 0:
-                total += np.linalg.norm(b[:,j])
-            else:
-                total += sp.distance.cosine(a[:,i].flatten(), b[:,j].flatten())
-    return float(total) / (a.shape[1] * b.shape[1])
+    a = a.sum(axis=1)
+    b = b.sum(axis=1)
+    return sp.distance.cosine(a.flatten(), b.flatten())
