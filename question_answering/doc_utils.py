@@ -7,6 +7,12 @@ TOPIC_SIZE = 200
 EMBEDDING_SIZE = 300
 Sentence = namedtuple('Sentence', 'text sp_sent matrix')
 
+OVERLAP = 1
+L3_GRAM = 0.08
+L5_GRAM = 0.08
+L7_GRAM = 0.08
+LF_GRAM = 0.75
+
 def get_doc_title(doc):
     # TODO: reliably parse title from document
     return ""
@@ -35,8 +41,28 @@ def get_category_docs(doc_dict, categories):
     return docs
 
 def compute_dist(a, b):
+    return 0.5 * windowed_dist(a, b, 1) + 0.5 * windowed_dist(a, b, 3)
+
+def windowed_dist(a, b, window):
     total = 0
-    for i in range(a.shape[1]):
+    normalize_factor = 0
+    for i in xrange(0, a.shape[1], window):
+        for j in xrange(0, b.shape[1], window):
+            a_sum = a[:, i:i+window].sum(axis=1)
+            b_sum = b[:, j:j+window].sum(axis=1)
+            normalize_factor += 1
+
+            if a_sum.sum() == 0:
+                total += np.linalg.norm(b[:,j])
+            elif b_sum.sum() == 0:
+                total += np.linalg.norm(b[:,j])
+            else:
+                total += sp.distance.cosine(a_sum.flatten(), b_sum.flatten())
+    return total / normalize_factor
+
+def get_vector(a, window):
+    total = 0
+    for i in xrange(0, a.shape[1]):
         for j in range(b.shape[1]):
             a_sum = a[:, i].sum() == 0
             b_sum = b[:, j].sum() == 0
