@@ -12,13 +12,13 @@ class Answerer(object):
         self.doc = doc
         self.matrix = get_doc_matrix(doc)
 
-    def closest_sentences(self, q, qtype, window):
+    def closest_sentences(self, q, qtype):
         m = get_sentence_matrix(q)
         smallest = {}
 
         for i in range(len(self.matrix)):
             s = self.matrix[i]
-            dist = compute_dist(s.matrix, m).item()
+            dist = compute_dist(s.matrix, m, window=False).item()
             if qc.has_type(s.sp_sent, qtype):
                 smallest[dist] = s
         keys = smallest.keys()
@@ -26,7 +26,7 @@ class Answerer(object):
         return [smallest[key] for key in keys]
 
     def find_closest_sentence(self, q, qtype, window):
-        sentences = self.closest_sentences(q, qtype, window)[:5]
+        sentences = self.closest_sentences(q, qtype)[:10]
         ner_answer = self.find_ner_sentence(sentences, q, qtype)
         smallest_answer = sentences[0]
         if ner_answer:

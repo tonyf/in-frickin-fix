@@ -61,8 +61,10 @@ def get_norm(a):
     a = a.sum(axis=0)
     return np.count_nonzero(a)
 
-def compute_dist(a, b):
-    return 0.5 * sentence_distance(a, b) + 0.25 * windowed_distance(a, b, 3) + 0.25 * windowed_distance(a, b, 5)
+def compute_dist(a, b, window=True):
+    if window:
+        return 0.75 * sentence_distance(a, b) + 0.25 * windowed_distance(a, b, 3)
+    return sentence_distance(a, b)
 
 def windowed_distance(a, b, window, mode='min'):
     total = 0
