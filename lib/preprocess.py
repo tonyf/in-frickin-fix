@@ -53,9 +53,18 @@ def resolve_coreferences(doc, pronoun_list, label, is_possessive):
                       if e.label_ == label and e.start_char < p[0]]
         if len(candidates) > 0:
             replacement = max(candidates, key = itemgetter(1))[0]
+            position = max(candidates, key = itemgetter(1))[1]
             replacement = replacement + "'s" if is_possessive else replacement
         else:
             replacement = doc.text[p[0]:p[1]]
+            position = p[0]
+        # Check if the resolved co-reference is in the same sentence
+        same_sent = True
+        for i in range(position, p[0]):
+            if doc.text[i-1] in [".", "?", "!"] and doc.text[i] == " ":
+                same_sent = False
+        if same_sent:
+            continue
         new_text.append(doc.text[p_last[1]:p[0]] + " " + replacement + " ")
         p_last = p
     new_text.append(doc.text[p_last[1]:])

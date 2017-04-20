@@ -315,9 +315,9 @@ Current criteria for removing are:
 def remove(question):
 	pronouns = ['he','him','his','she','her','hers','they','them','these','this','theirs','it','its']
 
-	for word in question.split():
-		if word.lower() in pronouns:
-			return 1
+	# for word in question.split():
+	# 	if word.lower() in pronouns:
+	# 		return 1
 
 	if len(question.split()) < 5 or len(question.split()) >= 20:
 		return 1
