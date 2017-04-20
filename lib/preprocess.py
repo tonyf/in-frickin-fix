@@ -97,8 +97,13 @@ def preprocess(txt, nlp):
     loc_list = [(m.start(), m.end()) for m in re.finditer(loc_re, new_txt)]
     #TODO: location-based co-ref resolution
 
+    doc = nlp(new_txt)
+    her_list = []
+    for i in range(len(doc)):
+        if doc[i].string in [u"Her ", u"her ", u"her"] and doc[i].tag_ == "PRP$":
+            her_list.append((doc[i].idx, doc[i+1].idx))
+    new_txt = resolve_coreferences(doc, her_list, "PERSON", True)
 
-    #TODO: there may be a better way to modify the doc than to remake it
     doc = nlp(new_txt)
     return doc
 
