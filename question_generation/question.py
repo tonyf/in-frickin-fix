@@ -483,9 +483,27 @@ Current criteria for removing are:
 def remove(question):
 	pronouns = ['he','him','his','she','her','hers','they','them','these','this','theirs','it','its']
 
+	pronoun_present = 0
+	person_present = 0
+
 	for word in question.split():
 		if word.lower() in pronouns:
-			return 1
+			pronoun_present = 1
+
+	try:
+			n = unicode(question, encoding = 'ascii', errors = 'ignore')
+	except Exception:
+			pass
+
+		doc = nlp(n)
+		for q in doc.sents:
+			for word in q:
+				if word.ent_type_ == "PERSON":
+					person_present = 1
+
+	#If no NE - person is present, but a pronoun is present, remove!
+	if person_present == 0 and pronoun_present == 1:
+		return 1
 
 	if len(question.split()) < 5 or len(question.split()) >= 20:
 		return 1
