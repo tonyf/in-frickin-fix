@@ -53,7 +53,7 @@ def evaluate_yn(sent, q, qtype):
     if qtype != QType.YESNO:
         return None
     
-    # Determine if both sentences 
+    # Evaluate negation in both sentences 
     quest = q.sents.next()
     qmv = quest.root
     quest_neg = False
@@ -67,17 +67,15 @@ def evaluate_yn(sent, q, qtype):
             sent_neg = True
     negated = True if quest_neg != sent_neg else False
     
-    # Find the key word in the question and the answering sentence
-    ur_word_s = None
-    ur_word_q = None
-    max_sim = 0.0
+    # Find the key words in the question and the answering sentence
+    word_pairs = []
     for i in range(len(sent)):
         for j in range(len(quest)):
             sim = sent[i].similarity(quest[j])
-            if sim > max_sim:
-                max_sim = sim
-                ur_word_s = sent[i]
-                ur_word_q = quest[j]
+            word_pairs.append((i, j, sim))
+    sorted_pairs = sorted(word_pairs, key=lambda x: x[2], reverse=True)
+    ur_word_s = [sent[sorted_pairs[0][0]], sent[sorted_pairs[1][0]]]
+    ur_word_q = [quest[sorted_pairs[0][1]], quest[sorted_pairs[1][1]]]
     
     # Evaluate similarity of key words
     '''
@@ -87,8 +85,11 @@ def evaluate_yn(sent, q, qtype):
         for ss in s_sets:
             if qs.pos() == ss.pos():
                 pass
-    '''  
-    comparison = True if ur_word_s.lemma_ == ur_word_q.lemma_ else False
+    '''
+    comparison = True
+    for i in range(len(ur_word_s)):
+        if ur_word_s[i].lemma_ != ur_word_q[i].lemma_:
+            comparison = False
     
     if comparison != negated:
         # Answer is True
