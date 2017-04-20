@@ -1,0 +1,46 @@
+taller,shorter
+longer,shorter
+smaller,larger
+bigger,smaller
+larger,smaller
+slower,faster
+quicker,slower
+faster,slower
+broader,narrower
+wider,narrower
+less,more
+more,less
+stronger,weaker
+weaker,stronger
+elder,younger
+younger,elder
+looser,tighter
+tighter,looser
+worse,better
+better,worse
+greater,lesser
+closer,further
+brighter,dimmer
+dimmer,brighter
+harsher,less harsh
+easier,more difficult
+higher,lower
+lower,higher
+earlier,later
+later,earlier
+safer,less safe
+happier,sadder
+sadder,happier
+harder,softer
+softer,harder
+fewer,more
+lesser,greater
+messier,neater
+neater,messier
+grander,less grand
+darker,lighter
+sweeter,more bitter
+richer,poorer
+poorer,richer
+newer,older
+heavier,lighter

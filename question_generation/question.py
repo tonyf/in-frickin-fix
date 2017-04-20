@@ -453,8 +453,10 @@ def subj_verb_obj_questions(doc):
 				question_answers[Q] = s
 
 
-def replace_superlatives():
+def replace_superlatives_comparatives():
+	thresh = 0.25
 	sups_dict = get_superlatives()
+	comps_dict = get_comparatives()
 	new_questions = {}
 	for question, score in final_questions.iteritems():
 		old_q = question
@@ -465,8 +467,12 @@ def replace_superlatives():
 			for i, word in enumerate(split_question):
 				if word in sups_dict:
 					sup = True
-					if random.random() > 0.5:
+					if random.random() > thresh:
 						split_question[i] = sups_dict[word]
+				if word in comps_dict:
+					comp = True
+					if random.random() > thresh:
+						split_question[i] = comps_dict[word]
 		new_q = (" ").join(split_question)
 		new_questions[new_q] = score
 		s = question_answers[old_q]
@@ -486,6 +492,17 @@ def get_superlatives():
 		sups_dict[sups[0]] = sups[1].strip()
 		line = f.readline()
 	return sups_dict
+
+
+def get_comparatives():
+	f = open("lib/comparatives.txt", "r")
+	comps_dict = {}
+	line = f.readline()
+	while line != "":
+		comps = line.split(",")
+		comps_dict[comps[0]] = comps[1].strip()
+		line = f.readline()
+	return comps_dict
 
 
 """
@@ -540,7 +557,6 @@ def test():
 	doc1 = set_dict[0]
 	try:
 		# superlative_questions(doc1)
-		get_superlatives()
 		yesno_questions(doc1)
 		evaluate_questions(questions_yn,1)
 		wh_questions(doc1)
@@ -559,7 +575,7 @@ def test():
 	# for q in questions_subj_verb_obj:
 	# 	print q
 
-	final_questions = replace_superlatives()
+	final_questions = replace_superlatives_comparatives()
 
 	print "All questions & their scores:"
 	for q in final_questions:
@@ -577,7 +593,6 @@ def main():
 		testing = bool(sys.argv[3])
 
 	try:
-		get_superlatives()
 		yesno_questions(doc)
 		questions_yn = fudge_questions(questions_yn)
 		evaluate_questions(questions_yn,1)
@@ -588,7 +603,7 @@ def main():
 	except Exception,e:
 		print(traceback.format_exc())
 
-	final_questions = replace_superlatives()
+	final_questions = replace_superlatives_comparatives()
 
 	
 	final_q = [x for x in final_questions.keys() if final_questions[x] != 0]

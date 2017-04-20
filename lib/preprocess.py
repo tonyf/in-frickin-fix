@@ -49,6 +49,9 @@ def resolve_coreferences(doc, pronoun_list, label, is_possessive):
     new_text = []
     p_last = (0, 0)
     for p in pronoun_list:
+        if doc.text[p[1]-1] == '.':
+            p = (p[0], p[1] - 1)
+
         candidates = [(e.text, e.start_char) for e in doc.ents
                       if e.label_ == label and e.start_char < p[0]]
         if len(candidates) > 0:
@@ -71,17 +74,21 @@ def resolve_coreferences(doc, pronoun_list, label, is_possessive):
     return "".join(new_text)
 
 def preprocess(txt, nlp):
+    # Put spaces before and after hyphens (for spacy)
+    new_txt = re.sub(r'-', ' - ', txt)
+    new_txt = re.sub(r'  -  ', ' - ', new_txt)
+
     # Perform NLP on each file's contents
     #TODO: possibly throw away or handle separately section headers (lines without any periods)
-    doc = nlp(txt)
+    doc = nlp(new_txt)
     #TODO: insert topic here?
 
     # Co-reference resolution
-    per_re = r'( He )|( he )|( Him )|( him )|( She )|( she )'
+    per_re = r'( He )|( he )|( Him )|( him )|( She )|( she )|( him\.)|( he\.)|( she\.)'
     per_list = [(m.start(), m.end()) for m in re.finditer(per_re, doc.text)]
     new_txt = resolve_coreferences(doc, per_list, "PERSON", False)
 
-    pos_re = r'( His )|( his )|( Hers )|( hers )'
+    pos_re = r'( His )|( his )|( Hers )|( hers )|( his\.)|( hers\.)'
     pos_list = [(m.start(), m.end()) for m in re.finditer(pos_re, new_txt)]
     doc = nlp(new_txt)
     new_txt = resolve_coreferences(doc, pos_list, "PERSON", True)
@@ -89,6 +96,7 @@ def preprocess(txt, nlp):
     loc_re = r'( There )|( there )'
     loc_list = [(m.start(), m.end()) for m in re.finditer(loc_re, new_txt)]
     #TODO: location-based co-ref resolution
+
 
     #TODO: there may be a better way to modify the doc than to remake it
     doc = nlp(new_txt)
