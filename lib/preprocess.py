@@ -60,7 +60,7 @@ def resolve_coreferences(doc, pronoun_list, label, is_possessive):
             position = p[0]
         # Check if the resolved co-reference is in the same sentence
         same_sent = True
-        for i in range(position, p[0]):
+        for i in range(position, p[0] + 1):
             if doc.text[i-1] in [".", "?", "!"] and doc.text[i] == " ":
                 same_sent = False
         if same_sent:
