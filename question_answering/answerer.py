@@ -36,10 +36,10 @@ class Answerer(object):
     def find_ner_sentence(self, sents, q, qtype):
         # TODO: Numbers
         q_ents = get_ents_in_sent(q.sents.next())
-        q_ents = [x for x in q_ents if x.label_ in ["DATE", "QUANTITY"]]
+        q_ents = [x for x in q_ents if x.label_ in ["DATE", "QUANTITY", "ORDINAL"]]
         for sent in sents:
             s_ents = get_ents_in_sent(sent.sp_sent)
-            s_ents = [x for x in s_ents if x.label_ in ["DATE", "QUANTITY"]]
+            s_ents = [x for x in s_ents if x.label_ in ["DATE", "QUANTITY", "ORDINAL"]]
             if s_ents.sort == q_ents.sort:
                 return sent
         return None
