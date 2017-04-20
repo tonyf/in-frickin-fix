@@ -18,7 +18,6 @@ nlp = spacy.load("en")
 testing = False
 question_answers = {}
 
-
 #Dict of final questions and their scores
 final_questions = {}
 
@@ -306,24 +305,6 @@ def fudge_questions(questions):
 	return new_qs
 
 
-"""
-Function that determines if a question needs to be removed
-Current criteria for removing are:
-1. Too short (< 5) or too long (> 20)
-2. If the subject is: "he/she/him/her/it/its/it's/"
-"""
-def remove(question):
-	pronouns = ['he','him','his','she','her','hers','they','them','these','this','theirs','it','its']
-
-	# for word in question.split():
-	# 	if word.lower() in pronouns:
-	# 		return 1
-
-	if len(question.split()) < 5 or len(question.split()) >= 20:
-		return 1
-
-	return 0
-
 def subj_verb_obj_questions(doc):
 	sents = doc.sents
 	for s in sents:
@@ -493,6 +474,23 @@ def get_superlatives():
 		line = f.readline()
 	return sups_dict
 
+"""
+Function that determines if a question needs to be removed
+Current criteria for removing are:
+1. Too short (< 5) or too long (> 20)
+2. If the subject is: "he/she/him/her/it/its/it's/"
+"""
+def remove(question):
+	pronouns = ['he','him','his','she','her','hers','they','them','these','this','theirs','it','its']
+
+	for word in question.split():
+		if word.lower() in pronouns:
+			return 1
+
+	if len(question.split()) < 5 or len(question.split()) >= 20:
+		return 1
+
+	return 0
 
 def get_comparatives():
 	f = open("lib/comparatives.txt", "r")
@@ -529,6 +527,9 @@ def score(question,id):
 
 	if id == 3:
 		return 3
+
+	if id == 2:
+		return 2
 
 	if id == 1:
 		return 1
@@ -597,7 +598,7 @@ def main():
 		questions_yn = fudge_questions(questions_yn)
 		evaluate_questions(questions_yn,1)
 		wh_questions(doc)
-		evaluate_questions(questions_wh,0)
+		evaluate_questions(questions_wh,2)
 		subj_verb_obj_questions(doc)
 		evaluate_questions(questions_subj_verb_obj,3)
 	except Exception,e:
@@ -605,13 +606,19 @@ def main():
 
 	final_questions = replace_superlatives_comparatives()
 
+
+	for key, value in sorted(final_questions.items(), key=lambda x: random.random()):
+		print key, value
+
 	
 	final_q = [x for x in final_questions.keys() if final_questions[x] != 0]
 
+	"""
 	for i in range(num_questions):
 		if (i >= len(final_q)):
 			break
 		print final_q[i]
+	"""
 
 	if testing:
 		f = open("lib/questions_answers.txt", "w")
