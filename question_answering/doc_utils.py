@@ -19,6 +19,13 @@ def get_doc_title(doc):
     # TODO: reliably parse title from document
     return ""
 
+def get_ents_in_sent(sent):
+    doc = sent.doc
+    start_idx = sent.start_char
+    end_idx = sent.end_char
+    ents = [x for x in doc.ents if x.start_char >= start_idx and x.end_char <= end_idx]
+    return ents
+
 def get_doc_matrix(doc):
     sentences = []
     for sent in doc.sents:
@@ -73,9 +80,9 @@ def windowed_distance(a, b, window, mode='min'):
                 sums.append( (a_vector, b_vector) )
 
     distances = [sp.distance.cosine(x[0], x[1]) for x in sums]
-    if mode == 'min':
-        return min(distances)
-    return sum(distances) / len(distances)
+    if mode == 'average':
+        return sum(distances) / len(distances)
+    return min(distances)
 
 
 def sentence_distance(a, b):
