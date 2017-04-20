@@ -485,24 +485,53 @@ def remove(question):
 
 	pronoun_present = 0
 	person_present = 0
+	pronoun_position = 0
+	person_postion = 0
+	who = 0
 
+	if question.split()[0] == "Who":
+		who = 1
+
+	pos = 0
 	for word in question.split():
+		pos += 1
 		if word.lower() in pronouns:
 			pronoun_present = 1
+			pronoun_position = pos
 
+	n = question
 	try:
 			n = unicode(question, encoding = 'ascii', errors = 'ignore')
 	except Exception:
 			pass
 
-		doc = nlp(n)
-		for q in doc.sents:
-			for word in q:
-				if word.ent_type_ == "PERSON":
-					person_present = 1
+	doc = nlp(n)
+	for q in doc.sents:
+		first = 0
+		pos = 0
+		for word in q:
+			pos += 1
+			if word.ent_type_ == "PERSON":
+				person_present = 1
+				person_postion = pos
+				break
+
+			if first == 0:
+				first = 1
+				continue
+
+			if word.string.islower() == False:
+				person_present = 1
+				person_postion = pos
+				break
+
+	#If NE-person is present after the pronoun - remove!
+	if person_present == 1 and pronoun_present == 1:
+		if pronoun_position < person_postion and who == 0:
+			return 1
 
 	#If no NE - person is present, but a pronoun is present, remove!
-	if person_present == 0 and pronoun_present == 1:
+	if person_present == 0 and pronoun_present == 1 and who == 0:
 		return 1
 
 	if len(question.split()) < 5 or len(question.split()) >= 20:
@@ -625,9 +654,13 @@ def main():
 	final_questions = replace_superlatives_comparatives()
 
 
+	count = 0
 	for key, value in sorted(final_questions.items(), key=lambda x: random.random()):
-		print key, value
+		if value != 0:
+			count += 1
+			print key
 
+	print "Total Count: ",count
 	
 	final_q = [x for x in final_questions.keys() if final_questions[x] != 0]
 
