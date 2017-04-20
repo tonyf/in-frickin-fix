@@ -20,8 +20,8 @@ def main():
 		if l_actual.strip() == l_expected.strip():
 			count_correct += 1
 		# 	expected_actual.append((question, l_expected, l_actual, True))
-		# else:
-		# 	expected_actual.append((question, l_expected, l_actual, False))
+		else:
+			expected_actual.append((question, l_expected, l_actual, False))
 
 		l_actual = f_actual.readline()
 		if l_actual == "":
@@ -33,7 +33,7 @@ def main():
 		l_expected = f_expected.readline()
 
 	print count_correct, " out of ", count_total, " correct."
-	# for question, expected, actual, matched in expected_actual:
-	# 	print "Question: ", question, "Expected: ", expected, "Actual: ", actual, "Correct: ", matched		
+	for question, expected, actual, matched in expected_actual:
+		print "Question: ", question, "Expected: ", expected, "Actual: ", actual, "Correct: ", matched, "\n"		
 
 main()

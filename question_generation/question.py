@@ -603,14 +603,19 @@ def test():
 			print q,":",final_questions[q]
 
 def main():
+	random.seed(17)
 	global testing
 	global questions_yn
 	_,doc = read_doc(sys.argv[1])
 	doc = preprocess(doc, nlp)
 	num_questions = int(sys.argv[2])
 
-	if len(sys.argv) > 3:
-		testing = bool(sys.argv[3])
+	if sys.argv[0].startswith("python"):
+		if len(sys.argv) > 3:
+			testing = bool(sys.argv[3])
+	else:
+		if len(sys.argv) > 2:
+			testing = bool(sys.argv[2])
 
 	try:
 		yesno_questions(doc)
@@ -637,6 +642,12 @@ def main():
 			final_q.append(key)
 			if count == num_questions:
 				break
+<<<<<<< HEAD
+=======
+	
+	# final_q = [x for x in final_questions.keys() if final_questions[x] != 0]
+
+>>>>>>> Minor testing fixes
 
 	if testing:
 		f = open("lib/questions_answers.txt", "w")
