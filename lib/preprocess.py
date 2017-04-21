@@ -10,12 +10,13 @@ def read_doc(filename):
     topic = None
     temp = []
     with codecs.open(filename, 'r') as f:
-        topic = f.readline()
+        topic = ""
         line = f.readline()
         while line != "":
             stripped = line.strip()
             if len(stripped) > 0 and stripped[-1] in ['.', ';', '?', '!']:
-                temp.append(unicode(stripped, encoding='ascii', errors='ignore'))
+                dash_replaced = re.sub(r'\xe2\x80\x93', '-', stripped)
+                temp.append(unicode(dash_replaced, encoding='ascii', errors='ignore'))
             line = f.readline()
     text = " ".join(temp)
     return (topic, text)
