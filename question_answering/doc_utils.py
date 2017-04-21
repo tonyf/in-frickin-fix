@@ -22,16 +22,14 @@ def get_ents_in_sent(sent):
     ents = [x for x in doc.ents if x.start_char >= start_idx and x.end_char <= end_idx]
     return ents
 
+def get_ents(sent):
+    ents = get_ents_in_sent(sent)
+    ents = [x for x in ents if x.label_ in ["DATE", "QUANTITY", "ORDINAL", "CARDINAL"]]
+    return ents
+
 def get_doc_title(doc):
     # TODO: reliably parse title from document
     return ""
-
-def get_ents_in_sent(sent):
-    doc = sent.doc
-    start_idx = sent.start_char
-    end_idx = sent.end_char
-    ents = [x for x in doc.ents if x.start_char >= start_idx and x.end_char <= end_idx]
-    return ents
 
 def get_doc_matrix(doc):
     sentences = []
@@ -61,10 +59,9 @@ def get_norm(a):
     a = a.sum(axis=0)
     return np.count_nonzero(a)
 
-def compute_dist(a, b, window=True):
-    if window:
-        return 0.75 * sentence_distance(a, b) + 0.25 * windowed_distance(a, b, 3)
+def compute_dist(a, b):
     return sentence_distance(a, b)
+    # return 0.5 * sentence_distance(a, b) + 0.25 * windowed_distance(a, b, 3) + 0.25 * windowed_distance(a, b, 5)
 
 def windowed_distance(a, b, window, mode='min'):
     total = 0
@@ -89,9 +86,9 @@ def windowed_distance(a, b, window, mode='min'):
                 sums.append( (a_vector, b_vector) )
 
     distances = [sp.distance.cosine(x[0], x[1]) for x in sums]
-    if mode == 'average':
-        return sum(distances) / len(distances)
-    return min(distances)
+    if mode == 'min':
+        return min(distances)
+    return sum(distances) / len(distances)
 
 
 def sentence_distance(a, b):
