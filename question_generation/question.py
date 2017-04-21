@@ -34,7 +34,10 @@ def refine(q):
 	q2 = q1.replace(" , ",", ")
 	q3 = q2.replace(".?","?")
 	q4 = q3.replace(" ?","?")
-	return q4
+	q5 = q4.replace("Who,","Who")
+	q6 = q5.replace("What,","What")
+	q7 = q6.replace("When,","When")
+	return q7
 
 def get_subphrase(node, word_list, sent):
 	begin = sent[0].i
@@ -76,7 +79,7 @@ def wh_questions(doc):
 					subj_list = get_subphrase(child,subj_list,s)
 					# subj_list.reverse()
 					for node in subj_list:
-						if node.ent_type_ == "PERSON":
+						if node.ent_type_ in ["PERSON","ORG"]:
 							wh = "Who"
 						elif node.ent_type_ == "GPE":
 							wh = "Which place"
@@ -88,7 +91,7 @@ def wh_questions(doc):
 					subj_list = get_subphrase(child,subj_list,s)
 					# subj_list.reverse()
 					for node in subj_list:
-						if node.ent_type_ == "PERSON":
+						if node.ent_type_ in ["PERSON","ORG"]:
 							wh = "Who"
 						elif node.ent_type_ == "GPE":
 							wh = "Which place"
@@ -221,7 +224,6 @@ def yesno_questions(doc):
 			remaining += " " + str(doc[position])
 			position += 1
 
-
 		#NOTE: Add capitalization -- DONE
 		#NOTE: If the subj is not a named entity, remove capitalization --DONE
 		#Use the not to generate more questions and to store the right answer
@@ -261,7 +263,11 @@ def yesno_questions(doc):
 			else:
 				verb = mv.lemma_
 				aux = aux.capitalize()
-				Q = str(aux+" "+subj+" "+verb+" "+remaining+"?")
+				prob = random.randint(0,100)
+				if prob > 50:
+					Q = str(aux+" "+subj+" not "+verb+" "+remaining+"?")
+				else:
+					Q = str(aux+" "+subj+" "+verb+" "+remaining+"?")
 				Q = refine(Q)
 				questions_yn.append(Q)
 				question_answers[Q] = s
@@ -276,6 +282,8 @@ def fudge_questions(questions):
 
 	months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 	new_qs = []
+	ords = ['1st','14th','72nd','90th']
+
 	for quest in questions:
 		old_q = quest
 		n = quest
@@ -285,16 +293,30 @@ def fudge_questions(questions):
 			pass
 		doc = nlp(n)
 		for q in doc.sents:
-			for word in q:
-				if word.ent_type_ == "DATE":
-					if str(word) in months:
-						pos = word.i
-						ind = months.index(str(word))
-						new_ind = ind + 3
-						if new_ind > 11:
-							new_ind = new_ind % 11
-						new_month = months[new_ind]
-						quest = quest.replace(str(word),new_month)
+			try:
+				for word in q:
+					# print word,word.ent_type_
+					if word.ent_type_ == "ORDINAL":
+						ran = random.randint(0,3)
+						num = str(ords[ran])
+						quest = quest.replace(str(word),num)
+
+					if word.ent_type_ in ["CARDINAL","MONEY"]:
+						numb = int(word.string)
+						new_numb = str(numb + 1)
+						quest = quest.replace(str(word),new_numb)
+
+					if word.ent_type_ == "DATE":
+						if str(word) in months:
+							pos = word.i
+							ind = months.index(str(word))
+							new_ind = ind + 3
+							if new_ind > 11:
+								new_ind = new_ind % 11
+							new_month = months[new_ind]
+							quest = quest.replace(str(word),new_month)
+			except:
+				pass
 
 		new_qs.append(quest)
 		s = question_answers[old_q]
@@ -467,21 +489,31 @@ def replace_superlatives_comparatives():
 
 """
 Function that determines if a question needs to be removed
+RETURN 1 IF QN SHOULD BE REMOVED
 Current criteria for removing are:
 1. Too short (< 5) or too long (> 20)
 2. If the subject is: "he/she/him/her/it/its/it's/"
 """
 def remove(question):
 	pronouns = ['he','him','his','she','her','hers','they','them','these','this','theirs','it','its']
+	puncs = [',',';']
 
 	pronoun_present = 0
 	person_present = 0
 	pronoun_position = 0
 	person_postion = 0
 	who = 0
+	num_puncs = 0
 
 	if question.split()[0] == "Who":
 		who = 1
+
+	for char in question:
+		if char in puncs:
+			num_puncs += 1
+
+	if num_puncs > 3:
+		return 1
 
 	pos = 0
 	for word in question.split():
@@ -544,15 +576,6 @@ def score(question,id):
 	if remove(question) == 1:
 		return 0
 
-	"""
-	#Check grammatical correctness of question
-	tool = language_check.LanguageTool('en-US')
-        matches = tool.check(question)
-        if len(matches)>2:
-		return 0
-	"""
-
-
 	if id == 3:
 		return 3
 
@@ -565,8 +588,6 @@ def score(question,id):
 	if "when" in question.split():
 		return 4
 
-	
-
 	return 5
 
 
@@ -577,30 +598,6 @@ def evaluate_questions(qn_set,id):
 		final_questions[question] = sc
 
 
-def test():
-	setlist = ["set1"]
-	set_dict = preprocess_question(setlist,nlp)
-	print "Questions for doc0 (the first doc) in test_set: "
-	print "------------------------------------------------"
-	# TODO: do this for all documents
-	doc1 = set_dict[0]
-	try:
-		# superlative_questions(doc1)
-		yesno_questions(doc1)
-		evaluate_questions(questions_yn,1)
-		wh_questions(doc1)
-		evaluate_questions(questions_wh,0)
-		subj_verb_obj_questions(doc1)
-		evaluate_questions(questions_subj_verb_obj,3)
-	except Exception,e:
-		print e
-
-	final_questions = replace_superlatives_comparatives()
-
-	print "All questions & their scores:"
-	for q in final_questions:
-		if final_questions[q] != 0:
-			print q,":",final_questions[q]
 
 def main():
 	random.seed(17)
@@ -642,12 +639,6 @@ def main():
 			final_q.append(key)
 			if count == num_questions:
 				break
-<<<<<<< HEAD
-=======
-	
-	# final_q = [x for x in final_questions.keys() if final_questions[x] != 0]
-
->>>>>>> Minor testing fixes
 
 	if testing:
 		f = open("lib/questions_answers.txt", "w")
